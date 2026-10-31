@@ -17,6 +17,7 @@ import {
 import { CommandPicker } from "./commandPicker";
 import { commandsFor, parseCommand, runCommand, showReply } from "./commands";
 import { hiddenBySettings, readConvoStorage } from "./convoStorage";
+import { showCommandResult } from "./commandResults";
 import { avatarUrl, mentionsUser, previewText } from "./formatMessage";
 import { EmojiPicker } from "./emoji";
 import { appendMention } from "./mentions";
@@ -407,6 +408,15 @@ export class ChatDock {
     });
     client.on("groupMessages", (gid, live) => {
       if (live) this.playGroupSound(gid);
+    });
+    client.on("result", (message) => {
+      if (message.group || !message.result) return;
+      const win = this.windows.get(message.partyId);
+      const line = win?.rendered.get(message.mid);
+      if (!win || !line) return;
+      const nearBottom = isNearBottom(win.list);
+      showCommandResult(line, message.result);
+      if (nearBottom) this.scrollToBottom(win);
     });
     client.on("typing", (uid, typing) => {
       if (this.options.typingIndicators) this.setUserTyping(uid, typing);

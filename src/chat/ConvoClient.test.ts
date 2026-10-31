@@ -185,6 +185,64 @@ describe("ConvoClient", () => {
     expect(init.body).toBe("my_post_key=abc");
   });
 
+  describe("command results", () => {
+    const flip = { mid: 1001, win: true, outcome: "Heads", balance: 250 };
+
+    it("adds a result to its loaded message", async () => {
+      await ready();
+      const onResult = jest.fn();
+      client.on("result", onResult);
+      socket.fire("convo_receivemessage", live({ message: "/flip 1" }));
+      socket.fire("convo_flip_result", flip);
+      const message = client.getMessages(PARTY)[0];
+      expect(message.result).toEqual({
+        kind: "flip",
+        win: true,
+        outcome: "Heads",
+        balance: 250,
+      });
+      expect(onResult).toHaveBeenCalledWith(message);
+    });
+
+    it("keeps a result that arrives before its message", async () => {
+      await ready();
+      const onResult = jest.fn();
+      client.on("result", onResult);
+      socket.fire("convo_coin_result", {
+        mid: 1001,
+        name: "Bitcoin",
+        price: "65000",
+        daychange: -1.234,
+      });
+      expect(onResult).not.toHaveBeenCalled();
+      socket.fire("convo_receivemessage", live({ message: "/price BTC" }));
+      expect(client.getMessages(PARTY)[0].result).toMatchObject({
+        kind: "price",
+        name: "Bitcoin",
+        change: -1.234,
+      });
+    });
+
+    it("finds group messages too", async () => {
+      await ready();
+      const onResult = jest.fn();
+      client.on("result", onResult);
+      socket.fire(
+        "convo_receivemessage",
+        live({ party_id: 48, is_group: true, mid: 70 })
+      );
+      socket.fire("convo_jackpot_result", {
+        mid: 70,
+        success: false,
+        message: "low_balance",
+      });
+      expect(onResult.mock.calls[0][0]).toMatchObject({
+        group: true,
+        result: { kind: "jackpot-error", error: "Insufficient Bytes" },
+      });
+    });
+  });
+
   it("rejects when the ticket is missing", async () => {
     fetchMock.mockResolvedValue({
       ok: false,

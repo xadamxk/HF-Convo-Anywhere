@@ -1,4 +1,10 @@
 import { Logger } from "../core/Logger";
+import {
+  CommandResult,
+  CommandResults,
+  parseCommandResult,
+  RESULT_EVENTS,
+} from "./commandResults";
 import { LinkPreviews, parseEmbed, parsePreviews } from "./formatMessage";
 import { SocketIOClient } from "./SocketIOClient";
 
@@ -76,6 +82,8 @@ export interface ChatMessage {
   previews?: LinkPreviews;
   /** An image link convo.php would show as an image (see parseEmbed). */
   embed?: string;
+  /** The outcome of a command sent as this message (/flip 100, /price BTC); live only. */
+  result?: CommandResult;
 }
 
 /** A private group convo ("Comrades" on convo.php). Group ids are HF usergroup ids. */
@@ -112,6 +120,8 @@ export interface ConvoClientEvents {
   groupMessages: (gid: number, live: boolean) => void;
   typing: (uid: number, typing: boolean) => void;
   error: (message: string) => void;
+  /** A command's outcome arrived for a loaded message (see commandResults.ts). */
+  result: (message: ChatMessage) => void;
 }
 
 type Listener<K extends keyof ConvoClientEvents> = ConvoClientEvents[K];
@@ -374,6 +384,7 @@ export class ConvoClient {
   /** Chats (see chatKey) whose newest page of history has been loaded. */
   private readonly historyLoaded = new Set<string>();
   private readonly seen = new Set<string>();
+  private readonly results = new CommandResults();
   private readonly listeners = new Map<string, Set<(...args: any[]) => void>>();
   private readonly socket: SocketIOClient;
   private readonly fetchFn: typeof fetch;
@@ -783,6 +794,25 @@ export class ConvoClient {
     socket.on("convo_error", (data: any) => {
       this.fire("error", String(data?.error || "Convo failed."));
     });
+    for (const event of RESULT_EVENTS) {
+      socket.on(event, (data: any) => this.onResult(event, data));
+    }
+  }
+
+  /** A command's outcome: kept for its message, which may not be here yet. */
+  private onResult(event: string, data: any): void {
+    const parsed = parseCommandResult(event, data);
+    if (!parsed) return;
+    this.results.set(parsed.mid, parsed.result);
+    for (const store of [this.messages, this.groupMessages]) {
+      for (const list of store.values()) {
+        const message = list.find((m) => m.mid === parsed.mid);
+        if (!message) continue;
+        message.result = parsed.result;
+        this.fire("result", message);
+        return;
+      }
+    }
   }
 
   private async onReady(data: any): Promise<void> {
@@ -881,6 +911,8 @@ export class ConvoClient {
     this.seen.add(key);
     if (this.seen.size > SEEN_LIMIT)
       this.seen.delete(this.seen.values().next().value!);
+    const result = this.results.get(message.mid);
+    if (result) message.result = result;
 
     for (const user of Object.values<any>(raw.users ?? {})) {
       this.updateUser(user);

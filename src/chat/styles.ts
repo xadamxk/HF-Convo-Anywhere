@@ -417,6 +417,24 @@ ${DEFAULT_VARS}
 /* Font Awesome link icons in Helpbot notices, like HF draws them */
 .hfx-chat-icon { margin-left: 3px; font-size: 10px; color: var(--hfx-chat-notice-icon); vertical-align: super; }
 .hfx-gc-line img { max-width: 100%; height: auto; border-radius: 6px; display: block; margin: 2px 0; }
+/* A command's outcome under its message (/flip, /jackpot, /price), as convo.php adds it */
+.hfx-chat-result {
+  width: fit-content;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 3px 0 2px;
+  padding: 3px 8px;
+  border-left: 3px solid var(--hfx-chat-outline);
+  border-radius: 4px;
+  background: rgba(var(--hfx-chat-tint), 0.05);
+  color: var(--hfx-chat-text);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.hfx-chat-result-win { border-left-color: var(--hfx-chat-notice-icon); }
+.hfx-chat-result-loss { border-left-color: var(--hfx-chat-error); }
+.hfx-chat-result-label { margin-right: 4px; color: var(--hfx-chat-muted); }
+.hfx-chat-result-title { font-weight: 600; color: var(--hfx-chat-strong); }
 /* An image link shown as an image above its message, as convo.php does */
 /*
  * Fixed height, so a message list never grows when one loads (and stays at

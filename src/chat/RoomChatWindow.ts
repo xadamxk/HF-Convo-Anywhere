@@ -4,6 +4,7 @@ import { HELPBOT_UID, wasNotDelivered } from "./ConvoClient";
 import { CommandPicker } from "./commandPicker";
 import { commandsFor, parseCommand, runCommand, showReply } from "./commands";
 import { hiddenBySettings, readConvoStorage } from "./convoStorage";
+import { showCommandResult } from "./commandResults";
 import { avatarUrl, mentionsUser } from "./formatMessage";
 import { GLOBAL_PARTY, RoomMessage } from "./GlobalRoomClient";
 import {
@@ -54,7 +55,7 @@ export interface RoomSource {
   /** Moderator level (convo_group_level); above 0 can /ban. */
   readonly groupLevel?: number;
   setTyping(typing: boolean): void;
-  /** Events: status(status), messages(added, reset), typing(), error(message). */
+  /** Events: status(status), messages(added, reset), typing(), error(message), result(message). */
   on(event: string, listener: (...args: any[]) => void): unknown;
 }
 
@@ -361,6 +362,13 @@ export abstract class RoomChatWindow {
       this.typing.textContent = typingText(Array.from(source.typing.values()));
     });
     source.on("error", (message: string) => this.showNotice(message));
+    source.on("result", (message: RoomMessage) => {
+      const line = this.lines.get(message.key);
+      if (!line || !message.result) return;
+      const nearBottom = isNearBottom(this.list);
+      showCommandResult(line, message.result);
+      if (nearBottom) this.scrollToBottom();
+    });
   }
 
   protected clearMessages(): void {

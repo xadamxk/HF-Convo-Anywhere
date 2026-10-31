@@ -58,6 +58,7 @@ const toRoomMessage = (gid: number, message: ChatMessage): RoomMessage => ({
   quiet: message.quiet,
   previews: message.previews,
   embed: message.embed,
+  result: message.result,
 });
 
 /** One group convo, read from and sent through the shared ConvoClient. */
@@ -78,6 +79,14 @@ export class GroupRoom implements RoomSource {
     this.listen("status", (status) => this.fire("status", status));
     this.listen("error", (message) => this.fire("error", message));
     this.listen("typing", (uid, typing) => this.onTyping(uid, typing));
+    this.listen("result", (message) => {
+      if (!message.group || message.partyId !== this.gid) return;
+      const key = toRoomMessage(this.gid, message).key;
+      const known = this.messages.find((m) => m.key === key);
+      if (!known) return;
+      known.result = message.result;
+      this.fire("result", known);
+    });
     this.sync(false);
   }
 

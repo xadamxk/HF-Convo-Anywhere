@@ -13,6 +13,12 @@ import {
   sendWithAck,
   toInt,
 } from "./ConvoClient";
+import {
+  CommandResult,
+  CommandResults,
+  parseCommandResult,
+  RESULT_EVENTS,
+} from "./commandResults";
 import { LinkPreviews, parseEmbed, parsePreviews } from "./formatMessage";
 import { SocketIOClient } from "./SocketIOClient";
 
@@ -54,6 +60,8 @@ export interface RoomMessage {
   previews?: LinkPreviews;
   /** An image link convo.php would show as an image (see parseEmbed). */
   embed?: string;
+  /** The outcome of a command sent as this message (/flip 100, /price BTC); live only. */
+  result?: CommandResult;
 }
 
 export interface RoomUser extends ChatUser {
@@ -130,6 +138,8 @@ export interface GlobalRoomEvents {
   online: () => void;
   typing: () => void;
   error: (message: string) => void;
+  /** A command's outcome arrived for a message in the room (see commandResults.ts). */
+  result: (message: RoomMessage) => void;
 }
 
 export interface GlobalRoomClientOptions {
@@ -163,6 +173,7 @@ export class GlobalRoomClient {
     ReturnType<typeof setTimeout>
   >();
   private readonly seen = new Set<string>();
+  private readonly results = new CommandResults();
   private readonly listeners = new Map<string, Set<(...args: any[]) => void>>();
   private readonly socket: SocketIOClient;
   private readonly randomUUID: () => string;
@@ -335,6 +346,23 @@ export class GlobalRoomClient {
     socket.on("convo_error", (data: any) => {
       this.fire("error", String(data?.error || "Convo failed."));
     });
+    for (const event of RESULT_EVENTS) {
+      socket.on(event, (data: any) => this.onResult(event, data));
+    }
+  }
+
+  /** A command's outcome: kept for its message, which may not be here yet. */
+  private onResult(event: string, data: any): void {
+    const parsed = parseCommandResult(event, data);
+    if (!parsed) return;
+    this.results.set(parsed.mid, parsed.result);
+    // Stanley's id-less notices borrow the newest id, so skip them
+    const message = this.messages.find(
+      (m) => m.mid === parsed.mid && !m.key.includes(":notice:")
+    );
+    if (!message) return;
+    message.result = parsed.result;
+    this.fire("result", message);
   }
 
   private async onReady(data: any): Promise<void> {
@@ -350,6 +378,7 @@ export class GlobalRoomClient {
     if (this.bootId !== null && bootId !== this.bootId) {
       this.messages = [];
       this.seen.clear();
+      this.results.clear();
       this.fire("messages", [], true);
     }
     this.bootId = bootId;
@@ -402,6 +431,8 @@ export class GlobalRoomClient {
       }
       // A message from them ends their typing notice
       if (this.typing.has(message.uid)) this.stopTyping(message.uid);
+      const result = notice ? undefined : this.results.get(message.mid);
+      if (result) message.result = result;
       added.push(message);
     }
     if (!added.length) return;

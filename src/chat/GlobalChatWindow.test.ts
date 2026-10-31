@@ -105,6 +105,38 @@ describe("GlobalChatWindow", () => {
     expect(socket.disconnects).toBe(1);
   });
 
+  it("shows a command's result under its message", async () => {
+    await open();
+    socket.fire("convo_receivemessage", room({ message: "/flip 5" }));
+    const line = () => win.root.querySelector(".hfx-gc-line")!;
+    expect(line().querySelector(".hfx-chat-result")).toBeNull();
+    socket.fire("convo_flip_result", {
+      mid: 1,
+      win: true,
+      outcome: "Heads",
+      balance: 105,
+    });
+    expect(line().querySelector(".hfx-chat-result")!.textContent).toBe(
+      "Result:HeadsWon · Balance:β105"
+    );
+    // A result that came first shows when its message does
+    socket.fire("convo_coin_result", {
+      mid: 2,
+      name: "Bitcoin",
+      price: 1,
+      daychange: 0,
+    });
+    socket.fire(
+      "convo_receivemessage",
+      room({ mid: 2, message: "/price BTC" })
+    );
+    expect(
+      win.root
+        .querySelectorAll(".hfx-gc-line")[1]
+        .querySelector(".hfx-chat-result")
+    ).not.toBeNull();
+  });
+
   it("groups a sender's messages within five minutes", async () => {
     await open();
     socket.fire("convo_receivemessage_bulk", [

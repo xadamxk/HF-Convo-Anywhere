@@ -133,6 +133,55 @@ describe("GlobalRoomClient", () => {
     });
   });
 
+  it("adds command results to room messages, before or after they arrive", async () => {
+    await ready();
+    const onResult = jest.fn();
+    client.on("result", onResult);
+    socket.fire("convo_receivemessage", roomMessage({ message: "/flip 5" }));
+    socket.fire("convo_flip_result", {
+      mid: 100,
+      win: false,
+      outcome: "Tails",
+      balance: 95,
+    });
+    expect(onResult.mock.calls[0][0]).toMatchObject({
+      key: "boot-1:100",
+      result: { kind: "flip", win: false, outcome: "Tails", balance: 95 },
+    });
+
+    socket.fire("convo_jackpot_result", {
+      mid: 101,
+      success: true,
+      bytesWon: 0,
+      balance: 70,
+      pot: 5000,
+    });
+    socket.fire(
+      "convo_receivemessage",
+      roomMessage({ mid: 101, message: "/jackpot play" })
+    );
+    expect(client.messages[1].result).toEqual({
+      kind: "jackpot",
+      won: 0,
+      balance: 70,
+      pot: 5000,
+    });
+  });
+
+  it("forgets results when the room restarts", async () => {
+    await ready();
+    socket.fire("convo_flip_result", {
+      mid: 100,
+      win: true,
+      outcome: "Heads",
+      balance: 1,
+    });
+    socket.fire("convo_ready", { user: ME, bootId: "boot-2" });
+    await flush();
+    socket.fire("convo_receivemessage", roomMessage({ bootId: "boot-2" }));
+    expect(client.messages[0].result).toBeUndefined();
+  });
+
   it("joins the public room on ready", async () => {
     const statuses: string[] = [];
     client.on("status", (status) => statuses.push(status));

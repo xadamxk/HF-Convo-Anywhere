@@ -1,6 +1,7 @@
 import { el } from "../core/Dom";
 import { convoNiceTime } from "../common/timestamps";
 import type { ChatUser } from "./ConvoClient";
+import { CommandResult, showCommandResult } from "./commandResults";
 import { avatarUrl, RenderableMessage, renderMessage } from "./formatMessage";
 
 /**
@@ -123,7 +124,7 @@ const replyIcon = () => {
  * button shows to its left on hover.
  */
 export function createMessageLine(
-  message: RenderableMessage & { dateline: number },
+  message: RenderableMessage & { dateline: number; result?: CommandResult },
   origin: string,
   attrs: Record<string, string | number> = {},
   mention = false,
@@ -154,5 +155,6 @@ export function createMessageLine(
     button.addEventListener("click", reply.onClick);
     line.prepend(button);
   }
+  if (message.result) showCommandResult(line, message.result);
   return line;
 }
