@@ -25,6 +25,6 @@ Load `dist/` as an unpacked extension (`chrome://extensions`, Developer mode, "L
 - `src/core/`: the few HFX helpers the chat code needs (DOM building, logging, page fetching, page info).
 - `src/settings.ts`: every setting's definition, defaults and storage (`chrome.storage.local`).
 - `src/options/`: the settings page (`options_ui`). Settings save as they change and apply on the next HF page load.
-- `scripts/make-icons.js`: draws the placeholder icons (`npm run icons`).
+- `assets/icon.svg`: the icon, an HF speech bubble in HFX's outlined style. `scripts/make-icons.js` draws it into the 16/32/48/128 PNGs in `src/assets/icons` (`npm run icons`); change both together.
 
 The toolbar button has no popup or click action yet.

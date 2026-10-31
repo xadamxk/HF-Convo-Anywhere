@@ -1,54 +1,111 @@
-// Draws the placeholder toolbar/store icons (a white chat bubble on a purple
-// rounded square) into src/assets/icons. Run with `npm run icons`.
+// Draws the toolbar/store icons into src/assets/icons from the shapes in
+// assets/icon.svg: a dark speech bubble with a white outline (HFX's icon style)
+// holding the letters HF. Run with `npm run icons` after changing either.
 const fs = require("fs");
 const path = require("path");
 const zlib = require("zlib");
 
 const SIZES = [16, 32, 48, 128];
-const BACKGROUND = [123, 91, 214];
-const BUBBLE = [255, 255, 255];
-const SAMPLES = 4;
+const VIEWBOX = 128;
+const SAMPLES = 8;
+const FILL = [44, 44, 44]; // #2c2c2c
+const WHITE = [255, 255, 255];
 
-/** Coverage of the shapes at a point in the unit square: 0 none, 1 bg, 2 bubble. */
-function shapeAt(x, y) {
-  // Rounded square
-  const r = 0.2;
-  const dx = Math.max(r - x, 0, x - (1 - r));
-  const dy = Math.max(r - y, 0, y - (1 - r));
-  if (dx * dx + dy * dy > r * r) return 0;
-  // Speech bubble: an ellipse with a tail at the bottom left
-  const ex = (x - 0.5) / 0.32;
-  const ey = (y - 0.46) / 0.25;
-  if (ex * ex + ey * ey <= 1) return 2;
-  const inTail = y >= 0.62 && y <= 0.8 && x >= 0.3 && x <= 0.46 - (y - 0.62);
-  return inTail ? 2 : 1;
+// The bubble (clockwise) and its outline width, as in assets/icon.svg
+const BUBBLE = [
+  [10, 14],
+  [118, 14],
+  [118, 86],
+  [62, 86],
+  [32, 114],
+  [32, 86],
+  [10, 86],
+];
+const OUTLINE = 5;
+
+// The letters' 11-wide strokes, as rectangles [left, top, right, bottom]
+const LETTERS = [
+  // H
+  [28.5, 30, 39.5, 70],
+  [50.5, 30, 61.5, 70],
+  [34, 44.5, 56, 55.5],
+  // F
+  [70.5, 30, 81.5, 70],
+  [70.5, 30, 98, 41],
+  [76, 44.5, 94, 55.5],
+];
+
+/** The polygon moved `distance` outward (negative: inward), with mitered corners. */
+function offsetPolygon(points, distance) {
+  const n = points.length;
+  const normals = points.map((p, i) => {
+    const q = points[(i + 1) % n];
+    const length = Math.hypot(q[0] - p[0], q[1] - p[1]);
+    // Outward for a clockwise polygon in y-down coordinates
+    return [(q[1] - p[1]) / length, -(q[0] - p[0]) / length];
+  });
+  return points.map((p, i) => {
+    const a = normals[(i + n - 1) % n];
+    const b = normals[i];
+    const scale = distance / (1 + a[0] * b[0] + a[1] * b[1]);
+    return [p[0] + (a[0] + b[0]) * scale, p[1] + (a[1] + b[1]) * scale];
+  });
+}
+
+function inside(points, x, y) {
+  let result = false;
+  for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+    const [xi, yi] = points[i];
+    const [xj, yj] = points[j];
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) {
+      result = !result;
+    }
+  }
+  return result;
+}
+
+/**
+ * The colour at a point in the 128×128 viewBox, or null where it's
+ * transparent. `outer` and `inner` are the outline's edges.
+ */
+function colorAt(x, y, { outer, inner }) {
+  if (LETTERS.some(([l, t, r, b]) => x >= l && x < r && y >= t && y < b)) {
+    return WHITE;
+  }
+  if (!inside(outer, x, y)) return null;
+  return inside(inner, x, y) ? FILL : WHITE;
 }
 
 function drawIcon(size) {
+  const scale = VIEWBOX / size;
+  // At least 1px wide, so the outline doesn't fade to grey in small icons
+  const outline = Math.max(OUTLINE, scale);
+  const bubble = {
+    outer: offsetPolygon(BUBBLE, outline / 2),
+    inner: offsetPolygon(BUBBLE, -outline / 2),
+  };
   const rows = [];
   for (let py = 0; py < size; py++) {
     const row = Buffer.alloc(1 + size * 4);
     for (let px = 0; px < size; px++) {
-      let bg = 0;
-      let bubble = 0;
+      const sum = [0, 0, 0];
+      let covered = 0;
       for (let sy = 0; sy < SAMPLES; sy++) {
         for (let sx = 0; sx < SAMPLES; sx++) {
-          const shape = shapeAt(
-            (px + (sx + 0.5) / SAMPLES) / size,
-            (py + (sy + 0.5) / SAMPLES) / size
+          const color = colorAt(
+            (px + (sx + 0.5) / SAMPLES) * scale,
+            (py + (sy + 0.5) / SAMPLES) * scale,
+            bubble
           );
-          if (shape === 1) bg++;
-          if (shape === 2) bubble++;
+          if (!color) continue;
+          covered++;
+          for (let c = 0; c < 3; c++) sum[c] += color[c];
         }
       }
-      const covered = bg + bubble;
-      const offset = 1 + px * 4;
       if (!covered) continue;
-      for (let c = 0; c < 3; c++) {
-        row[offset + c] = Math.round(
-          (BACKGROUND[c] * bg + BUBBLE[c] * bubble) / covered
-        );
-      }
+      const offset = 1 + px * 4;
+      for (let c = 0; c < 3; c++)
+        row[offset + c] = Math.round(sum[c] / covered);
       row[offset + 3] = Math.round((255 * covered) / SAMPLES ** 2);
     }
     rows.push(row);
