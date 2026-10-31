@@ -10,6 +10,8 @@
     "icons": "node scripts/make-icons.js",
     "banners": "node scripts/make-banners.js",
     "banners:png": "node scripts/render-banners.js",
+    "buttons": "node scripts/make-buttons.js",
+    "buttons:png": "node scripts/render-banners.js assets/buttons --transparent",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.jest.json",
     "lint": "eslint .",
     "format": "prettier --write .",

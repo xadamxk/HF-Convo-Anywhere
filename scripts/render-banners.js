@@ -1,12 +1,21 @@
-// Renders assets/banners/*.svg to PNGs of the same size, using a Chrome that
-// is running with --remote-debugging-port (default 9222; set CDP_PORT to
-// change it). Run `npm run banners` first.
+// Renders a folder's SVGs (assets/banners by default) to PNGs of the same
+// size, using a Chrome that is running with --remote-debugging-port (default
+// 9222; set CDP_PORT to change it). Run `npm run banners` first.
+// Usage: node render-banners.js [folder] [--transparent]
+//   --transparent keeps the area around the drawing transparent (the
+//   buttons); without it PNGs have no alpha channel, as the Web Store needs.
 const fs = require("fs");
 const path = require("path");
 const { pathToFileURL } = require("url");
 
 const PORT = process.env.CDP_PORT || 9222;
-const dir = path.resolve(__dirname, "../assets/banners");
+const args = process.argv.slice(2);
+const transparent = args.includes("--transparent");
+const dir = path.resolve(
+  __dirname,
+  "..",
+  args.find((arg) => !arg.startsWith("--")) ?? "assets/banners"
+);
 
 async function connect() {
   const res = await fetch(`http://127.0.0.1:${PORT}/json/new?about:blank`, {
@@ -54,9 +63,14 @@ async function connect() {
 
 (async () => {
   const files = fs.readdirSync(dir).filter((f) => f.endsWith(".svg"));
-  if (!files.length) throw new Error(`No SVGs in ${dir}; run npm run banners`);
+  if (!files.length) throw new Error(`No SVGs in ${dir}`);
   const tab = await connect();
   await tab.send("Page.enable");
+  if (transparent) {
+    await tab.send("Emulation.setDefaultBackgroundColorOverride", {
+      color: { r: 0, g: 0, b: 0, a: 0 },
+    });
+  }
   try {
     for (const file of files) {
       const source = fs.readFileSync(path.join(dir, file), "utf8");

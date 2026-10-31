@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="132" viewBox="0 0 1200 132">
+<rect x="2" y="2" width="1196" height="128" rx="20" fill="#242424" stroke="#3d3d3d" stroke-width="2"/>
+<g transform="translate(76 66) scale(0.92)"><defs><radialGradient id="firefox-message-globe" cx="0.35" cy="0.3" r="0.8"><stop offset="0" stop-color="#b833e1"/><stop offset="0.45" stop-color="#7542e5"/><stop offset="1" stop-color="#3a3dd0"/></radialGradient><linearGradient id="firefox-message-fox" x1="0.85" y1="0.1" x2="0.2" y2="0.95"><stop offset="0" stop-color="#ffe226"/><stop offset="0.35" stop-color="#ff980e"/><stop offset="0.7" stop-color="#ff3750"/><stop offset="1" stop-color="#eb0878"/></linearGradient></defs><circle cx="8" cy="-8" r="34" fill="url(#firefox-message-globe)"/><path d="M-2 -50 C10 -52 22 -48 29 -40 C21 -41 14 -42 8 -42 A34 34 0 1 0 42 -8 C44 -12 46 -16 46 -20 A50 50 0 1 1 -2 -50 Z" fill="url(#firefox-message-fox)"/><path d="M-2 -50 L-9 -58 L4 -51 Z" fill="#ff980e"/></g>
+<text x="148" y="56" font-family="'Segoe UI', Arial, sans-serif" font-size="32" fill="#ffa436" font-weight="700">Firefox<tspan dx="14" font-size="22" font-weight="400" fill="#8a8a8a">now</tspan></text>
+<text x="148" y="100" font-family="'Segoe UI', Arial, sans-serif" font-size="32" fill="#e6e6e6" >Click to install directly from Mozilla Add-ons</text>
+</svg>
