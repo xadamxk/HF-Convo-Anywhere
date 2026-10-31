@@ -1,8 +1,6 @@
 [align=center]
 [img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/banners/banner-marquee-purple.png?raw=true[/img]
 
-[size=large][color=#F012BE]Messenger-style chat[/color] for [color=#7FDBFF]Hack Forums[/color][/size]
-
 [img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/buttons/new-messages.png?raw=true[/img]
 [url=https://chromewebstore.google.com/detail/njcdkoeiippmgcfkkeicficmdebmagil][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/buttons/button-message-chrome.png?raw=true[/img][/url]
 [url=https://addons.mozilla.org/en-US/firefox/addon/hf-convo-anywhere/][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/buttons/button-message-firefox.png?raw=true[/img][/url]
@@ -17,27 +15,21 @@ No setup: install it, refresh HF, and your chats are there. Want it your way? Pi
 [*][size=large]Chat From Any Page[/size]
 Avatar bubbles down the side of every page, with online status, unread badges and typing indicators.
 [spoiler=Bubbles and Global Chat][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/store/1-bubbles-and-global-chat.png?raw=true[/img][/spoiler]
-
 [*][size=large]Messenger-Style List[/size]
 Prefer a list? See every conversation with its latest message, filtered by All, Direct or Groups.
 [spoiler=List Layout][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/store/4-list-layout.png?raw=true[/img][/spoiler]
-
 [*][size=large]Commands and Mentions[/size]
 Type / for every Convo command (/flip, /jackpot, /stats, /price and more), or @ to pick a member to mention.
 [spoiler=Commands and Mentions][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/store/6-commands-and-mentions.png?raw=true[/img][/spoiler]
-
 [*][size=large]Never Lose Your Place[/size]
 A "New messages" line marks what came in while you were away, with a button to jump to the newest.
 [spoiler=New Messages][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/store/2-new-messages.png?raw=true[/img][/spoiler]
-
 [*][size=large]Emoji and Images[/size]
 An emoji picker with your recent emoji, plus images by attaching, pasting or dragging them in.
 [spoiler=Emoji Picker][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/store/3-emoji.png?raw=true[/img][/spoiler]
-
 [*][size=large]Your Settings, One Page[/size]
 Bubbles or list, left or right side, how many conversations to show, sounds and more.
 [spoiler=Settings][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/store/5-settings.png?raw=true[/img][/spoiler]
-
 [*][size=large]And More[/size]
 Convo buttons on profiles and posts open the chat right in the dock, unsent messages follow you between pages, Convo's message sound (mentions only or every message for group chats), and an option to hide Stanley's notices in the global chat.
 [/list]
@@ -52,6 +44,33 @@ HF Convo Anywhere only talks to Hack Forums, using your existing login, the same
 
 [size=x-large]Show Your Support[/size]
 Enjoying it? A review in the [url=https://chromewebstore.google.com/detail/njcdkoeiippmgcfkkeicficmdebmagil]Chrome Web Store[/url] or on [url=https://addons.mozilla.org/en-US/firefox/addon/hf-convo-anywhere/]Firefox Add-ons[/url] goes a long way.
+
+Want to spread the word? Pick a signature below and paste its code into your signature ([url=https://hackforums.net/usercp.php?action=editsig]User CP > Edit Signature[/url]).
+[spoiler=Signatures]
+[align=center][b]Showcase - Purple[/b]
+[img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-showcase-purple.png?raw=true[/img][/align]
+[code][url=RELEASE_THREAD_URL][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-showcase-purple.png?raw=true[/img][/url][/code]
+
+[align=center][b]Showcase - Blue[/b]
+[img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-showcase-blue.png?raw=true[/img][/align]
+[code][url=RELEASE_THREAD_URL][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-showcase-blue.png?raw=true[/img][/url][/code]
+
+[align=center][b]Showcase - Grey[/b]
+[img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-showcase-grey.png?raw=true[/img][/align]
+[code][url=RELEASE_THREAD_URL][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-showcase-grey.png?raw=true[/img][/url][/code]
+
+[align=center][b]Message - Purple[/b]
+[img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-message-purple.png?raw=true[/img][/align]
+[code][url=RELEASE_THREAD_URL][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-message-purple.png?raw=true[/img][/url][/code]
+
+[align=center][b]Message - Blue[/b]
+[img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-message-blue.png?raw=true[/img][/align]
+[code][url=RELEASE_THREAD_URL][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-message-blue.png?raw=true[/img][/url][/code]
+
+[align=center][b]Message - Grey[/b]
+[img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-message-grey.png?raw=true[/img][/align]
+[code][url=RELEASE_THREAD_URL][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-message-grey.png?raw=true[/img][/url][/code]
+[/spoiler]
 
 [size=x-large]Found a Bug?[/size]
 Open a [url=https://github.com/xadamxk/HF-Convo-Anywhere/issues]GitHub issue[/url] or post in this thread. Please include your browser, the page you were on and the steps to make it happen.
