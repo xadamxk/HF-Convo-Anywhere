@@ -846,4 +846,71 @@ export const CHAT_DOCK_CSS = `
 .hfx-gc-command:hover { background: rgba(255, 255, 255, 0.06); }
 .hfx-gc-command-usage { font-weight: bold; }
 .hfx-gc-command-about { color: var(--hfx-chat-muted); font-size: 11px; }
+/* Chat images open in the image viewer */
+.hfx-gc-line img.hfx-chat-upload,
+.hfx-gc-line .hfx-chat-embed img { cursor: zoom-in; }
+/* The image viewer: a chat image as large as fits, over the whole page */
+.hfx-image-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 100001;
+  display: flex;
+  flex-direction: column;
+  background: rgba(0, 0, 0, 0.88);
+  color: #e6e6e6;
+  font: 13px Verdana, Arial, sans-serif;
+}
+.hfx-image-viewer-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: rgba(24, 24, 24, 0.92);
+  border-bottom: 1px solid #3c3c3c;
+}
+.hfx-image-viewer-caption {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: bold;
+}
+.hfx-image-viewer-actions { display: flex; align-items: center; gap: 8px; }
+.hfx-image-viewer-button {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 14px;
+  border: 1px solid #4a4a4a;
+  border-radius: 15px;
+  background: #2d2d2d;
+  color: #e6e6e6 !important;
+  font: inherit;
+  text-decoration: none !important;
+  cursor: pointer;
+}
+.hfx-image-viewer-button:hover,
+.hfx-image-viewer-button:focus-visible { background: #3a3a3a; }
+.hfx-image-viewer-close { justify-content: center; width: 30px; padding: 0; font-size: 20px; line-height: 1; }
+/* Centred while it fits; scrolls from the top left at actual size */
+.hfx-image-viewer-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  padding: 16px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.hfx-image-viewer-img {
+  margin: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 6px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+}
+.hfx-image-viewer-zoomable .hfx-image-viewer-img { cursor: zoom-in; }
+.hfx-image-viewer-actual .hfx-image-viewer-img { max-width: none; max-height: none; cursor: zoom-out; }
 `;

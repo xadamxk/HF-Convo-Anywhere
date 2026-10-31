@@ -1005,3 +1005,40 @@ describe("ChatDock message layout", () => {
     expect(groups()).toEqual(["Charlie: older, newer"]);
   });
 });
+
+describe("ChatDock image viewer", () => {
+  const win = () =>
+    document.querySelector<HTMLElement>(
+      `.hfx-chat-window[data-party="${PARTY}"]`
+    )!;
+  const addImage = () =>
+    client.add({
+      uid: OTHER.uid,
+      text: "",
+      image: { type: "png", data: "iVBORw0KGgo=", width: 10, height: 10 },
+    });
+
+  it("opens a chat image, and Esc closes it before minimizing the window", async () => {
+    await mount();
+    addImage();
+    win().querySelector<HTMLImageElement>("img.hfx-chat-upload")!.click();
+    expect(document.querySelector(".hfx-image-viewer")).not.toBeNull();
+
+    win()
+      .querySelector("textarea")!
+      .dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
+      );
+
+    expect(document.querySelector(".hfx-image-viewer")).toBeNull();
+    expect(win().classList).not.toContain("hfx-chat-minimized");
+  });
+
+  it("closes the viewer when the dock goes", async () => {
+    await mount();
+    addImage();
+    win().querySelector<HTMLImageElement>("img.hfx-chat-upload")!.click();
+    dock!.destroy();
+    expect(document.querySelector(".hfx-image-viewer")).toBeNull();
+  });
+});

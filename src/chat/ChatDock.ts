@@ -33,6 +33,7 @@ import {
   imageUploadError,
   readBytes,
 } from "./images";
+import { ImageViewer, openImagesInViewer } from "./imageViewer";
 import { mirrorSiteScrollbar } from "./siteScrollbar";
 import { MessageSoundPlayer, mutedParties } from "./sound";
 import { convoNiceTime } from "../common/timestamps";
@@ -266,6 +267,8 @@ export class ChatDock {
     ReturnType<typeof setTimeout>
   >();
   private presenceTimer?: ReturnType<typeof setInterval>;
+  /** Shows a clicked chat image full size, for every window in the dock. */
+  private readonly imageViewer = new ImageViewer();
   private global: GlobalChatWindow | null = null;
   private readonly groupWindows = new Map<number, GroupChatWindow>();
   /** Groups on the cached list (or added to it); others found in messages get added. */
@@ -304,6 +307,7 @@ export class ChatDock {
   mount(parent: HTMLElement = document.body): void {
     parent.appendChild(this.root);
     mirrorSiteScrollbar(this.root);
+    openImagesInViewer(this.root, this.imageViewer);
     // Statuses come from last-active times, so they age (online → away → offline)
     this.presenceTimer = setInterval(() => {
       this.renderHeads();
@@ -352,6 +356,7 @@ export class ChatDock {
   }
 
   destroy(): void {
+    this.imageViewer.close();
     this.windows.forEach((win) => win.emoji.close());
     this.global?.destroy();
     this.global = null;

@@ -13,7 +13,7 @@ Features:
 + Convo commands with a picker (/flip, /jackpot, /stats, /price and more)
 + @mentions with a member list, and replies to individual messages
 + Emoji picker with your recent emoji
-+ Send images by attaching, pasting or dragging them in
++ Send images by attaching, pasting or dragging them in, and click any image to view it full size
 + Convo's message sound, with mentions-only or every-message options for group chats
 + Convo buttons on profiles and posts open the chat in the dock (Ctrl-click still opens convo.php)
 + Unsent messages are kept as you move between pages
@@ -28,5 +28,8 @@ Privacy policy: https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/PRIVACY.m
 HF Convo Anywhere is a community project and is not affiliated with or endorsed by Hack Forums.
 
 Changelog:
+2026-10-31: Version 1.0.1:
++ Click an image in a chat to view it full size, with Save or Open original
+
 2026-10-31: Version 1.0.0 Release:
 + Initial release

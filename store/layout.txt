@@ -25,7 +25,7 @@ Type / for every Convo command (/flip, /jackpot, /stats, /price and more), or @ 
 A "New messages" line marks what came in while you were away, with a button to jump to the newest.
 [spoiler=New Messages][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/store/2-new-messages.png?raw=true[/img][/spoiler]
 [*][size=large]Emoji and Images[/size]
-An emoji picker with your recent emoji, plus images by attaching, pasting or dragging them in.
+An emoji picker with your recent emoji, plus images by attaching, pasting or dragging them in. Click any image to view it full size.
 [spoiler=Emoji Picker][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/store/3-emoji.png?raw=true[/img][/spoiler]
 [*][size=large]Your Settings, One Page[/size]
 Bubbles or list, left or right side, how many conversations to show, sounds and more.

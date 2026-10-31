@@ -431,6 +431,7 @@ export function renderImage(image: ChatImage): HTMLImageElement | null {
   const type = image.type.toLowerCase();
   if (!IMAGE_TYPES.includes(type) || !BASE64.test(image.data)) return null;
   const img = el("img", {
+    class: "hfx-chat-upload",
     src: `data:image/${type};base64,${image.data.replace(/\s/g, "")}`,
     alt: "Image",
     loading: "lazy",
