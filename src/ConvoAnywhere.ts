@@ -9,6 +9,7 @@ import { Logger } from "./core/Logger";
 import { addCssToPage, getCurrentUser, getUserPostKey } from "./core/Page";
 import {
   ConvoSettings,
+  DEFAULT_SETTINGS,
   DOCK_STATE_KEY,
   getStorageItem,
   GROUP_LIST_KEY,
@@ -63,7 +64,7 @@ export class ConvoAnywhere {
     const sound = settings.sound ? new MessageSound() : undefined;
     const dock = new ChatDock({
       client,
-      maxBubbles: Number(settings.maxBubbles) || 5,
+      maxBubbles: Number(settings.maxBubbles) || DEFAULT_SETTINGS.maxBubbles,
       typingIndicators: settings.typingIndicators !== false,
       sound,
       groups:

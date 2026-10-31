@@ -82,7 +82,7 @@ export const SETTINGS: SettingDefinition[] = [
     label: "Conversations to show",
     description:
       "The most conversations to show: up to 10 bubbles, or up to 20 in the list. Unread conversations are shown first.",
-    default: 5,
+    default: 8,
     min: 1,
     max: 20,
     step: 1,

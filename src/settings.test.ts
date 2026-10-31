@@ -8,11 +8,11 @@ import {
 } from "./settings";
 
 describe("settings", () => {
-  it("has the same defaults as HFX's Convo Anywhere", () => {
+  it("has HFX's Convo Anywhere defaults, but shows 8 conversations", () => {
     expect(DEFAULT_SETTINGS).toEqual({
       layout: "bubbles",
       side: "right",
-      maxBubbles: 5,
+      maxBubbles: 8,
       typingIndicators: true,
       globalChat: true,
       hideStanley: false,
