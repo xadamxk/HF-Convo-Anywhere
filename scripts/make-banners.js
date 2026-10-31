@@ -1,7 +1,8 @@
 // Draws the promo banners into assets/banners as SVG, in the style of HFX's
 // banner: the title over a doodle pattern, and a browser window showing an HF
 // page with Convo Anywhere's bubbles and two chat windows (shapes only, no
-// text). Three colours, two sizes (920×680 and 440×280).
+// text). Three colours, three sizes: 920×680 and 440×280 like HFX, and
+// the Chrome Web Store marquee (1400×560).
 // Run with `npm run banners`; `npm run banners:png` then renders the PNGs.
 const fs = require("fs");
 const path = require("path");
@@ -369,16 +370,36 @@ function small(variant) {
   );
 }
 
+/** The Chrome Web Store's marquee tile: title on the left, browser on the right. */
+function marquee(variant) {
+  const scale = 0.86;
+  const left = r1(1400 - WIDTH * scale - 36);
+  const top = r1(560 - BOTTOM * scale);
+  return svg(
+    1400,
+    560,
+    variant,
+    [
+      pattern(1400, 560, variant.pattern, 46, 1, 3),
+      title(310, ["HF CONVO", "ANYWHERE"], 76, 250, 84),
+      `<text x="310" y="392" text-anchor="middle" font-family="${FONT}" font-weight="600" font-size="25" fill="#ffffff" opacity="0.85">Your Convo chats on every HF page</text>`,
+      `<g transform="translate(${left} ${top}) scale(${scale})">${browser()}</g>`,
+    ].join("\n")
+  );
+}
+
+const BANNERS = { large, small, marquee };
+
 const outDir = path.resolve(__dirname, "../assets/banners");
 fs.mkdirSync(outDir, { recursive: true });
 for (const [name, variant] of Object.entries(VARIANTS)) {
-  fs.writeFileSync(
-    path.join(outDir, `banner-large-${name}.svg`),
-    large(variant)
-  );
-  fs.writeFileSync(
-    path.join(outDir, `banner-small-${name}.svg`),
-    small(variant)
-  );
+  for (const [size, draw] of Object.entries(BANNERS)) {
+    fs.writeFileSync(
+      path.join(outDir, `banner-${size}-${name}.svg`),
+      draw(variant)
+    );
+  }
 }
-console.log(`Wrote ${Object.keys(VARIANTS).length * 2} banners to ${outDir}`);
+console.log(
+  `Wrote ${Object.keys(VARIANTS).length * Object.keys(BANNERS).length} banners to ${outDir}`
+);

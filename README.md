@@ -7,31 +7,26 @@ Chat in Convo from anywhere on HackForums - your DMs, group chats and the global
 </div>
 
 <details> 
-  <summary>Chats on Any Page:</summary>
-  <img src="https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/screenshots/1-chats-on-any-page.png?raw=true" title="Chats on Any Page"  />
+  <summary>Bubbles and Global Chat:</summary>
+  <img src="https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/store/1-bubbles-and-global-chat.png?raw=true" title="Bubbles and Global Chat"  />
 </details>
 
 <details> 
-  <summary>Global Chat, Group Chats and Commands:</summary>
-  <img src="https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/screenshots/2-global-and-group-chat.png?raw=true" title="Global Chat, Group Chats and Commands"  />
+  <summary>New Messages:</summary>
+  <img src="https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/store/2-new-messages.png?raw=true" title="New Messages"  />
 </details>
 
 <details> 
-  <summary>Replies and Emoji:</summary>
-  <img src="https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/screenshots/3-dm-reply-and-emoji.png?raw=true" title="Replies and Emoji"  />
+  <summary>Emoji Picker:</summary>
+  <img src="https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/store/3-emoji.png?raw=true" title="Emoji Picker"  />
 </details>
 
 <details> 
-  <summary>Bubbles Layout:</summary>
-  <img src="https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/screenshots/4-bubbles-and-global-chat.png?raw=true" title="Bubbles Layout"  />
-</details>
-
-<details> 
-  <summary>Group Chat Bubbles:</summary>
-  <img src="https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/screenshots/5-bubbles-with-group-chats.png?raw=true" title="Group Chat Bubbles"  />
+  <summary>List Layout:</summary>
+  <img src="https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/store/4-list-layout.png?raw=true" title="List Layout"  />
 </details>
 
 <details> 
   <summary>Settings:</summary>
-  <img src="https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/screenshots/6-settings-page.png?raw=true" title="Settings"  />
+  <img src="https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/store/5-settings.png?raw=true" title="Settings"  />
 </details>
