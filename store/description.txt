@@ -1,0 +1,32 @@
+Chat in Convo from anywhere on Hack Forums!
+
+HF Convo Anywhere brings Hack Forums' Convo to every page of the site. Your direct messages, group chats and the global chat live in a Messenger-style dock, so you can keep browsing threads and still reply without keeping a convo.php tab open.
+
+It's lightweight and does one thing: once installed, your chats are on every page, with every option on one simple settings page.
+
+Features:
++ Chat dock on every Hack Forums page (hidden on convo.php, where Convo is already open)
++ Direct messages, group chats (Comrades) and the global chat
++ Bubbles or a Messenger-style list, on the left or right side of the page
++ Online, away and offline status, unread badges and typing indicators
++ A "New messages" line and jump button, so you never lose your place
++ Convo commands with a picker (/flip, /jackpot, /stats, /price and more)
++ @mentions with a member list, and replies to individual messages
++ Emoji picker with your recent emoji
++ Send images by attaching, pasting or dragging them in
++ Convo's message sound, with mentions-only or every-message options for group chats
++ Convo buttons on profiles and posts open the chat in the dock (Ctrl-click still opens convo.php)
++ Unsent messages are kept as you move between pages
++ Hide Stanley's automated notices in the global chat
++ Follows your convo.php settings: muted conversations stay silent, and /embed hide is respected
+
+Every option is on the extension's settings page (right-click the toolbar icon > Options).
+
+Privacy: HF Convo Anywhere only talks to Hack Forums, using your existing login. It collects nothing and sends nothing to the developer or anyone else.
+Privacy policy: https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/PRIVACY.md
+
+HF Convo Anywhere is a community project and is not affiliated with or endorsed by Hack Forums.
+
+Changelog:
+2026-10-31: Version 1.0.0 Release:
++ Initial release
