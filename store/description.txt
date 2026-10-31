@@ -8,6 +8,7 @@ Features:
 + Chat dock on every Hack Forums page (hidden on convo.php, where Convo is already open)
 + Direct messages, group chats (Comrades) and the global chat
 + Bubbles or a Messenger-style list, on the left or right side of the page
++ 15 color themes, from Gray, HF Purple and HFX Blue to High Contrast, Synthwave, Ocean and Sakura
 + Online, away and offline status, unread badges and typing indicators
 + A "New messages" line and jump button, so you never lose your place
 + Convo commands with a picker (/flip, /jackpot, /stats, /price and more)
@@ -28,6 +29,10 @@ Privacy policy: https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/PRIVACY.m
 HF Convo Anywhere is a community project and is not affiliated with or endorsed by Hack Forums.
 
 Changelog:
+2026-10-31: Version 1.1.0:
++ 15 color themes, picked on the settings page: open HF pages change right away
++ The Open in Convo button no longer shows in HF's link color
+
 2026-10-31: Version 1.0.1:
 + Click an image in a chat to view it full size, with Save or Open original
 

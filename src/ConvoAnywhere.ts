@@ -15,6 +15,7 @@ import {
   GROUP_LIST_KEY,
   loadSettings,
   setStorageItem,
+  watchTheme,
 } from "./settings";
 
 export interface GroupListCache {
@@ -100,6 +101,7 @@ export class ConvoAnywhere {
           : undefined,
       side: settings.side === "left" ? "left" : "right",
       layout: settings.layout === "list" ? "list" : "bubbles",
+      theme: settings.theme,
       state: dockState ?? DEFAULT_DOCK_STATE,
       saveState: (state) => {
         setStorageItem(DOCK_STATE_KEY, state).catch((error) =>
@@ -115,6 +117,8 @@ export class ConvoAnywhere {
     });
     dock.mount();
     client.connect();
+    // A theme picked on the settings page shows here at once
+    watchTheme((theme) => dock.setTheme(theme));
     if (settings.convoLinks !== false) {
       const origin = location.origin;
       interceptConvoLinks(

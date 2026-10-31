@@ -1,14 +1,14 @@
+import { DEFAULT_COLORS, themeCss } from "./themes";
+
+const DEFAULT_VARS = Object.entries(DEFAULT_COLORS)
+  .map(([name, value]) => `  --hfx-chat-${name}: ${value};`)
+  .join("\n");
+
 /** Styles for the chat dock, matched to HF's dark theme and Convo bubbles. */
 export const CHAT_DOCK_CSS = `
 #hfx-chat-dock {
-  --hfx-chat-bg: #1f1f1f;
-  --hfx-chat-header: #2d2d2d;
-  --hfx-chat-border: #3c3c3c;
-  --hfx-chat-text: #cecece;
-  --hfx-chat-muted: #8a8a8a;
-  --hfx-chat-mine: #4e4e4e;
-  --hfx-chat-accent: #4d2f5d;
-  --hfx-chat-badge: #d9534f;
+  /* Gray: the default theme (see themes.ts) */
+${DEFAULT_VARS}
   /* Online matches convo.php's inbox dot */
   --hfx-chat-online: rgb(63, 160, 63);
   --hfx-chat-away: #a8923a;
@@ -92,7 +92,7 @@ export const CHAT_DOCK_CSS = `
   box-sizing: border-box;
   border-radius: calc(var(--hfx-chat-dot-size) / 2);
   background: var(--hfx-chat-offline);
-  box-shadow: 0 0 0 3px var(--hfx-chat-dot-ring, #1f1f1f);
+  box-shadow: 0 0 0 3px var(--hfx-chat-dot-ring, var(--hfx-chat-bg));
   transition: min-width 0.15s ease;
 }
 .hfx-chat-dot.hfx-chat-presence-online { background: var(--hfx-chat-online); }
@@ -136,7 +136,8 @@ export const CHAT_DOCK_CSS = `
   border: none;
   border-bottom: 1px solid var(--hfx-chat-border);
   background: var(--hfx-chat-header);
-  color: #fff;
+  color: var(--hfx-chat-strong);
+  --hfx-chat-muted: var(--hfx-chat-header-muted);
   font-size: 14px;
   font-weight: bold;
   text-align: left;
@@ -167,8 +168,8 @@ export const CHAT_DOCK_CSS = `
   text-align: left;
   cursor: pointer;
 }
-.hfx-chat-row:hover { background: rgba(255, 255, 255, 0.06); }
-.hfx-chat-row.hfx-chat-row-open { background: rgba(255, 255, 255, 0.1); }
+.hfx-chat-row:hover { background: rgba(var(--hfx-chat-tint), 0.06); }
+.hfx-chat-row.hfx-chat-row-open { background: rgba(var(--hfx-chat-tint), 0.1); }
 .hfx-chat-row-avatar {
   position: relative;
   flex: none;
@@ -181,8 +182,13 @@ export const CHAT_DOCK_CSS = `
   top: -1px;
   right: -1px;
 }
-.hfx-chat-row:hover .hfx-chat-dot { --hfx-chat-dot-ring: #2a2a2a; }
-.hfx-chat-row.hfx-chat-row-open .hfx-chat-dot { --hfx-chat-dot-ring: #343434; }
+/* The row's wash over the panel, so the dot's cut-out matches it */
+.hfx-chat-row:hover .hfx-chat-dot {
+  --hfx-chat-dot-ring: color-mix(in srgb, var(--hfx-chat-bg), rgb(var(--hfx-chat-tint)) 6%);
+}
+.hfx-chat-row.hfx-chat-row-open .hfx-chat-dot {
+  --hfx-chat-dot-ring: color-mix(in srgb, var(--hfx-chat-bg), rgb(var(--hfx-chat-tint)) 10%);
+}
 .hfx-chat-row-avatar img {
   width: 100%;
   height: 100%;
@@ -204,7 +210,7 @@ export const CHAT_DOCK_CSS = `
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #fff;
+  color: var(--hfx-chat-strong);
 }
 .hfx-chat-row-time { flex: none; color: var(--hfx-chat-muted); font-size: 11px; }
 .hfx-chat-row-preview {
@@ -215,7 +221,7 @@ export const CHAT_DOCK_CSS = `
   font-size: 12px;
 }
 .hfx-chat-row-unread .hfx-chat-row-name,
-.hfx-chat-row-unread .hfx-chat-row-preview { font-weight: bold; color: #fff; }
+.hfx-chat-row-unread .hfx-chat-row-preview { font-weight: bold; color: var(--hfx-chat-strong); }
 .hfx-chat-row-unread .hfx-chat-row-time { color: var(--hfx-chat-text); }
 .hfx-chat-row-badge { position: static; flex: none; }
 
@@ -246,7 +252,7 @@ export const CHAT_DOCK_CSS = `
   /* Dark, like HF's own pages, so the group's colors show */
   background: var(--hfx-chat-header);
   border-color: var(--hfx-chat-border);
-  color: #fff;
+  color: var(--hfx-chat-strong);
 }
 .hfx-chat-group-initials { font-size: 15px; font-weight: bold; letter-spacing: 0.5px; }
 /* The initials wear the group's HF style (class groupN); keep its size and spacing ours */
@@ -261,6 +267,7 @@ export const CHAT_DOCK_CSS = `
 .hfx-chat-head.hfx-chat-groups-toggle {
   background: var(--hfx-chat-accent);
   border-color: transparent;
+  color: var(--hfx-chat-on-accent);
 }
 .hfx-chat-head.hfx-chat-groups-toggle.hfx-chat-groups-expanded {
   background: var(--hfx-chat-header);
@@ -275,7 +282,7 @@ export const CHAT_DOCK_CSS = `
   border: 1px solid var(--hfx-chat-border);
   border-radius: 11px;
   background: var(--hfx-chat-header);
-  color: #fff;
+  color: var(--hfx-chat-strong);
 }
 .hfx-chat-row-group-icon .hfx-chat-group-initials { font-size: 13px; }
 /* HF's group name styles come from its own stylesheet; keep them row-sized */
@@ -291,24 +298,24 @@ export const CHAT_DOCK_CSS = `
 }
 .hfx-chat-filter {
   padding: 2px 10px;
-  border: 1px solid #555;
+  border: 1px solid var(--hfx-chat-outline);
   border-radius: 10px;
   background: transparent;
   color: var(--hfx-chat-text);
   font-size: 11px;
   cursor: pointer;
 }
-.hfx-chat-filter:hover { background: rgba(255, 255, 255, 0.08); }
+.hfx-chat-filter:hover { background: rgba(var(--hfx-chat-tint), 0.08); }
 .hfx-chat-filter.hfx-chat-filter-on {
   background: var(--hfx-chat-mine);
   border-color: var(--hfx-chat-mine);
-  color: #fff;
+  color: var(--hfx-chat-on-mine);
 }
 .hfx-gc-group-window .hfx-gc-icon {
   padding: 3px;
   border-radius: 7px;
   background: var(--hfx-chat-accent);
-  color: #fff;
+  color: var(--hfx-chat-on-accent);
 }
 .hfx-gc-group-window .hfx-gc-icon svg { width: 18px; height: 18px; }
 
@@ -319,7 +326,7 @@ export const CHAT_DOCK_CSS = `
 .hfx-gc-online-toggle {
   flex: none;
   padding: 1px 8px;
-  border: 1px solid #555;
+  border: 1px solid var(--hfx-chat-outline);
   border-radius: 10px;
   background: transparent;
   color: var(--hfx-chat-text);
@@ -327,7 +334,7 @@ export const CHAT_DOCK_CSS = `
   cursor: pointer;
 }
 .hfx-gc-online-toggle:hover,
-.hfx-gc-online-toggle[aria-expanded="true"] { background: rgba(255, 255, 255, 0.1); color: #fff; }
+.hfx-gc-online-toggle[aria-expanded="true"] { background: rgba(var(--hfx-chat-tint), 0.1); color: var(--hfx-chat-strong); }
 .hfx-gc-body {
   position: relative;
   flex: 1;
@@ -356,7 +363,7 @@ export const CHAT_DOCK_CSS = `
   padding: 0;
   border: none;
   background: none;
-  color: #fff;
+  color: var(--hfx-chat-strong);
   font: bold 12px Verdana, Arial, sans-serif;
   text-align: left;
   cursor: pointer;
@@ -379,7 +386,7 @@ export const CHAT_DOCK_CSS = `
   line-height: 1.4;
   word-break: break-word;
 }
-.hfx-gc-line:hover { background: rgba(255, 255, 255, 0.04); }
+.hfx-gc-line:hover { background: rgba(var(--hfx-chat-tint), 0.04); }
 /* Reply (mention the sender), in the space left of the text, shown on hover */
 .hfx-gc-line { position: relative; }
 .hfx-gc-reply {
@@ -394,18 +401,21 @@ export const CHAT_DOCK_CSS = `
   padding: 2px 3px;
   border: none;
   border-radius: 4px;
-  background: var(--hfx-chat-header);
+  background: var(--hfx-chat-popup);
   color: var(--hfx-chat-muted);
   cursor: pointer;
 }
 /* Faded out, not removed, so keyboard users can tab to it */
 .hfx-gc-line:hover > .hfx-gc-reply,
 .hfx-gc-reply:focus-visible { opacity: 1; }
-.hfx-gc-reply:hover { background: #3a3a3a; color: #fff; }
+.hfx-gc-reply:hover {
+  background: color-mix(in srgb, var(--hfx-chat-popup), rgb(var(--hfx-chat-tint)) 8%);
+  color: var(--hfx-chat-strong);
+}
 .hfx-gc-reply svg { display: block; width: 16px; height: 16px; }
-.hfx-gc-line a { color: #9ecbff; text-decoration: underline; }
+.hfx-gc-line a { color: var(--hfx-chat-link); text-decoration: underline; }
 /* Font Awesome link icons in Helpbot notices, like HF draws them */
-.hfx-chat-icon { margin-left: 3px; font-size: 10px; color: #7fd67f; vertical-align: super; }
+.hfx-chat-icon { margin-left: 3px; font-size: 10px; color: var(--hfx-chat-notice-icon); vertical-align: super; }
 .hfx-gc-line img { max-width: 100%; height: auto; border-radius: 6px; display: block; margin: 2px 0; }
 /* An image link shown as an image above its message, as convo.php does */
 /*
@@ -417,8 +427,8 @@ export const CHAT_DOCK_CSS = `
 /* Only the text column (from just left of the text), not under the avatar */
 .hfx-gc-line.hfx-gc-mention {
   background:
-    linear-gradient(#a982c4, #a982c4) 44px 0 / 3px 100% no-repeat,
-    linear-gradient(rgba(77, 47, 93, 0.45), rgba(77, 47, 93, 0.45)) 44px 0 /
+    linear-gradient(var(--hfx-chat-mention-bar), var(--hfx-chat-mention-bar)) 44px 0 / 3px 100% no-repeat,
+    linear-gradient(var(--hfx-chat-mention-bg), var(--hfx-chat-mention-bg)) 44px 0 /
       calc(100% - 44px) 100% no-repeat;
 }
 .hfx-gc-pending {
@@ -442,7 +452,7 @@ export const CHAT_DOCK_CSS = `
   border: none;
   border-bottom: 1px solid var(--hfx-chat-border);
   background: none;
-  color: #fff;
+  color: var(--hfx-chat-strong);
   font: bold 12px Verdana, Arial, sans-serif;
   text-align: left;
   cursor: pointer;
@@ -464,7 +474,7 @@ export const CHAT_DOCK_CSS = `
   text-align: left;
   cursor: pointer;
 }
-.hfx-gc-user:hover { background: rgba(255, 255, 255, 0.06); }
+.hfx-gc-user:hover { background: rgba(var(--hfx-chat-tint), 0.06); }
 .hfx-gc-user img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; flex: none; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -485,7 +495,7 @@ export const CHAT_DOCK_CSS = `
   box-sizing: border-box;
   border-radius: 9px;
   background: var(--hfx-chat-badge);
-  color: #fff;
+  color: var(--hfx-chat-on-badge);
   font-size: 11px;
   font-weight: bold;
   line-height: 18px;
@@ -503,8 +513,8 @@ export const CHAT_DOCK_CSS = `
   justify-content: center;
   border: 2px dashed var(--hfx-chat-text);
   border-radius: 8px 8px 0 0;
-  background: rgba(31, 31, 31, 0.88);
-  color: #fff;
+  background: color-mix(in srgb, var(--hfx-chat-bg) 88%, transparent);
+  color: var(--hfx-chat-strong);
   font-weight: bold;
   pointer-events: none;
 }
@@ -530,11 +540,18 @@ export const CHAT_DOCK_CSS = `
   gap: 8px;
   padding: 6px 6px 6px 10px;
   background: var(--hfx-chat-header);
+  --hfx-chat-muted: var(--hfx-chat-header-muted);
   border-bottom: 1px solid var(--hfx-chat-border);
   cursor: pointer;
   user-select: none;
 }
-.hfx-chat-header.hfx-chat-unread { background: var(--hfx-chat-accent); }
+.hfx-chat-header.hfx-chat-unread {
+  /* Its text in the theme's color for text on the accent */
+  --hfx-chat-strong: var(--hfx-chat-on-accent);
+  --hfx-chat-text: var(--hfx-chat-on-accent);
+  --hfx-chat-muted: color-mix(in srgb, var(--hfx-chat-on-accent) 75%, var(--hfx-chat-accent));
+  background: var(--hfx-chat-accent);
+}
 .hfx-chat-header img {
   width: 28px;
   height: 28px;
@@ -567,7 +584,7 @@ export const CHAT_DOCK_CSS = `
   /* Only the name is a link, not the empty header beside it */
   align-self: flex-start;
   max-width: 100%;
-  color: #fff;
+  color: var(--hfx-chat-strong);
   font-weight: bold;
   text-decoration: none;
   overflow: hidden;
@@ -592,7 +609,10 @@ export const CHAT_DOCK_CSS = `
   text-decoration: none;
   cursor: pointer;
 }
-.hfx-chat-action:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+.hfx-chat-action:hover { background: rgba(var(--hfx-chat-tint), 0.1); color: var(--hfx-chat-strong); }
+/* The Open in Convo link: over HF's own link colors */
+#hfx-chat-dock a.hfx-chat-action { color: var(--hfx-chat-text); }
+#hfx-chat-dock a.hfx-chat-action:hover { color: var(--hfx-chat-strong); }
 
 .hfx-chat-messages {
   flex: 1;
@@ -609,7 +629,7 @@ export const CHAT_DOCK_CSS = `
   align-items: center;
   gap: 6px;
   margin: 4px 0;
-  color: #e0868a;
+  color: var(--hfx-chat-new-text);
   font-size: 10px;
   font-weight: bold;
   text-transform: uppercase;
@@ -618,7 +638,7 @@ export const CHAT_DOCK_CSS = `
 .hfx-chat-unread-divider::after {
   content: "";
   flex: 1;
-  border-top: 1px solid #c4565c;
+  border-top: 1px solid var(--hfx-chat-new-line);
 }
 /* Shown when messages come while you're scrolled up; stays at the bottom of the view */
 .hfx-chat-jump {
@@ -630,7 +650,7 @@ export const CHAT_DOCK_CSS = `
   border: 0;
   border-radius: 10px;
   background: var(--hfx-chat-accent);
-  color: #fff;
+  color: var(--hfx-chat-on-accent);
   font-size: 11px;
   cursor: pointer;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
@@ -665,7 +685,7 @@ export const CHAT_DOCK_CSS = `
   max-height: 160px;
   overflow-y: auto;
   border-radius: 6px;
-  background: var(--hfx-chat-header);
+  background: var(--hfx-chat-popup);
   color: var(--hfx-chat-text);
   text-align: left;
 }
@@ -695,10 +715,10 @@ export const CHAT_DOCK_CSS = `
   letter-spacing: normal !important;
 }
 /* A DM send that wasn't confirmed: its text, then the reason with Retry and Discard */
-.hfx-gc-pending.hfx-chat-failed { color: #ff8a80; font-style: normal; }
+.hfx-gc-pending.hfx-chat-failed { color: var(--hfx-chat-error); font-style: normal; }
 .hfx-chat-msg-error {
   margin: 2px 10px 0 50px;
-  color: #ff8a80;
+  color: var(--hfx-chat-error);
   font-size: 11px;
 }
 .hfx-chat-msg-error button {
@@ -741,10 +761,10 @@ export const CHAT_DOCK_CSS = `
 .hfx-chat-attach svg,
 .hfx-chat-emoji svg { display: block; width: 18px; height: 18px; }
 .hfx-chat-attach:hover,
-.hfx-chat-emoji:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+.hfx-chat-emoji:hover { background: rgba(var(--hfx-chat-tint), 0.1); color: var(--hfx-chat-strong); }
 .hfx-chat-attach:focus-visible,
-.hfx-chat-emoji:focus-visible { outline: 1px solid #555; }
-.hfx-chat-emoji[aria-expanded="true"] { background: rgba(255, 255, 255, 0.1); color: #fff; }
+.hfx-chat-emoji:focus-visible { outline: 1px solid var(--hfx-chat-outline); }
+.hfx-chat-emoji[aria-expanded="true"] { background: rgba(var(--hfx-chat-tint), 0.1); color: var(--hfx-chat-strong); }
 /* Emoji, just above the compose box on the right */
 .hfx-chat-emoji-panel {
   position: absolute;
@@ -758,7 +778,7 @@ export const CHAT_DOCK_CSS = `
   box-sizing: border-box;
   border: 1px solid var(--hfx-chat-border);
   border-radius: 6px;
-  background: var(--hfx-chat-header);
+  background: var(--hfx-chat-popup);
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.5);
 }
 .hfx-chat-emoji-panel[hidden] { display: none; }
@@ -781,7 +801,7 @@ export const CHAT_DOCK_CSS = `
   cursor: pointer;
 }
 .hfx-chat-emoji-option:hover,
-.hfx-chat-emoji-option:focus-visible { background: rgba(255, 255, 255, 0.12); outline: none; }
+.hfx-chat-emoji-option:focus-visible { background: rgba(var(--hfx-chat-tint), 0.12); outline: none; }
 /*
  * One 16px line between 7px paddings and the border fills the 32px box, so the
  * text sits in the middle. HF styles every textarea (custom_v4.css sets
@@ -796,15 +816,15 @@ export const CHAT_DOCK_CSS = `
   box-sizing: border-box;
   margin: 0;
   padding: 7px 10px !important;
-  border: 1px solid #222;
+  border: 1px solid var(--hfx-chat-input-border);
   border-radius: 16px !important;
-  background: #2a2a2a !important;
-  color: #eee !important;
+  background: var(--hfx-chat-input) !important;
+  color: var(--hfx-chat-input-text) !important;
   font: 13px/16px Arial, sans-serif !important;
   resize: none;
   outline: none;
 }
-.hfx-chat-compose textarea:focus { border-color: #555; }
+.hfx-chat-compose textarea:focus { border-color: var(--hfx-chat-outline); }
 /* Members offered while typing an @mention, just above the compose box */
 .hfx-chat-compose { position: relative; }
 .hfx-gc-mentions {
@@ -819,7 +839,7 @@ export const CHAT_DOCK_CSS = `
   padding: 4px 0;
   border: 1px solid var(--hfx-chat-border);
   border-radius: 6px;
-  background: var(--hfx-chat-header);
+  background: var(--hfx-chat-popup);
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.5);
 }
 .hfx-gc-mentions .hfx-gc-user { box-sizing: border-box; }
@@ -831,9 +851,11 @@ export const CHAT_DOCK_CSS = `
 #hfx-chat-dock .hfx-chat-emoji-panel,
 #hfx-chat-dock .hfx-chat-compose textarea {
   scrollbar-width: thin;
-  scrollbar-color: var(--hfx-chat-scroll-thumb) var(--hfx-chat-scroll-track);
+  /* A theme's own colors, if it has them */
+  scrollbar-color: var(--hfx-chat-theme-scroll-thumb, var(--hfx-chat-scroll-thumb))
+    var(--hfx-chat-theme-scroll-track, var(--hfx-chat-scroll-track));
 }
-.hfx-gc-mentions .hfx-gc-mention-active { background: rgba(255, 255, 255, 0.12); }
+.hfx-gc-mentions .hfx-gc-mention-active { background: rgba(var(--hfx-chat-tint), 0.12); }
 /* Commands offered after typing / at the start of a message */
 .hfx-gc-command {
   display: flex;
@@ -843,9 +865,10 @@ export const CHAT_DOCK_CSS = `
   color: var(--hfx-chat-text);
   cursor: pointer;
 }
-.hfx-gc-command:hover { background: rgba(255, 255, 255, 0.06); }
+.hfx-gc-command:hover { background: rgba(var(--hfx-chat-tint), 0.06); }
 .hfx-gc-command-usage { font-weight: bold; }
 .hfx-gc-command-about { color: var(--hfx-chat-muted); font-size: 11px; }
+${themeCss()}
 /* Chat images open in the image viewer */
 .hfx-gc-line img.hfx-chat-upload,
 .hfx-gc-line .hfx-chat-embed img { cursor: zoom-in; }

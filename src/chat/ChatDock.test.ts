@@ -6,6 +6,7 @@ import { GlobalRoomClient } from "./GlobalRoomClient";
 import type { SocketIOClient } from "./SocketIOClient";
 import type { ChatMessage, Conversation, ConvoClient } from "./ConvoClient";
 import { SendError } from "./ConvoClient";
+import type { ThemeId } from "./themes";
 
 const ME = { uid: 10, username: "Me", avatar: "", lastActive: 0 };
 const OTHER = { uid: 123, username: "Charlie", avatar: "", lastActive: 0 };
@@ -87,6 +88,7 @@ const mount = async (
   options: {
     side?: "left" | "right";
     layout?: "bubbles" | "list";
+    theme?: ThemeId;
     open?: boolean;
     global?: boolean;
     openChats?: OpenChat[];
@@ -101,6 +103,7 @@ const mount = async (
     typingIndicators: true,
     side: options.side,
     layout: options.layout,
+    theme: options.theme,
     createGlobal: options.global
       ? ({ minimized, onClose, onChange, openChat }) => {
           const socket = new FakeConvoSocket();
@@ -1040,5 +1043,23 @@ describe("ChatDock image viewer", () => {
     win().querySelector<HTMLImageElement>("img.hfx-chat-upload")!.click();
     dock!.destroy();
     expect(document.querySelector(".hfx-image-viewer")).toBeNull();
+  });
+});
+
+describe("ChatDock theme", () => {
+  const root = () => document.getElementById("hfx-chat-dock")!;
+
+  it("is Gray unless another theme is picked", async () => {
+    await mount();
+    expect(root().dataset.theme).toBe("gray");
+    dock!.destroy();
+    await mount({ theme: "ember" });
+    expect(root().dataset.theme).toBe("ember");
+  });
+
+  it("switches theme while open", async () => {
+    await mount({ theme: "purple" });
+    dock!.setTheme("high-contrast");
+    expect(root().dataset.theme).toBe("high-contrast");
   });
 });

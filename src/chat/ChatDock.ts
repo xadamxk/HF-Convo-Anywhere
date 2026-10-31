@@ -36,6 +36,7 @@ import {
 import { ImageViewer, openImagesInViewer } from "./imageViewer";
 import { mirrorSiteScrollbar } from "./siteScrollbar";
 import { MessageSoundPlayer, mutedParties } from "./sound";
+import { DEFAULT_THEME, ThemeId } from "./themes";
 import { convoNiceTime } from "../common/timestamps";
 import {
   createMessageGroup,
@@ -145,6 +146,8 @@ export interface ChatDockOptions {
   side?: "left" | "right";
   /** Avatar bubbles (default) or a Messenger-style conversation list. */
   layout?: "bubbles" | "list";
+  /** The color theme (default Gray). */
+  theme?: ThemeId;
   /** Plays HF's sound for new messages; leave out for no sound. */
   sound?: MessageSoundPlayer;
   /** Private group convos; leave out to hide them. */
@@ -297,6 +300,7 @@ export class ChatDock {
       {
         id: "hfx-chat-dock",
         class: options.side === "left" ? "hfx-chat-left" : null,
+        "data-theme": options.theme ?? DEFAULT_THEME,
         hidden: true,
       },
       this.heads
@@ -313,6 +317,11 @@ export class ChatDock {
       this.renderHeads();
       this.windows.forEach((win) => this.renderHeader(win));
     }, 60000);
+  }
+
+  /** Switch to another color theme. */
+  setTheme(theme: ThemeId): void {
+    this.root.dataset.theme = theme;
   }
 
   /**

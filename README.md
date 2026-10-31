@@ -32,6 +32,11 @@ Chat in Convo from anywhere on HackForums - your DMs, group chats and the global
 </details>
 
 <details> 
+  <summary>Themes:</summary>
+  <img src="https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/store/7-themes.png?raw=true" title="Themes"  />
+</details>
+
+<details> 
   <summary>Settings:</summary>
   <img src="https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/store/5-settings.png?raw=true" title="Settings"  />
 </details>

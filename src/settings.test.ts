@@ -5,6 +5,7 @@ import {
   saveSettings,
   SETTINGS,
   SETTINGS_KEY,
+  watchTheme,
 } from "./settings";
 
 describe("settings", () => {
@@ -12,6 +13,7 @@ describe("settings", () => {
     expect(DEFAULT_SETTINGS).toEqual({
       layout: "bubbles",
       side: "right",
+      theme: "gray",
       maxBubbles: 8,
       typingIndicators: true,
       globalChat: true,
@@ -31,6 +33,7 @@ describe("settings", () => {
     const changed = {
       layout: "list",
       side: "left",
+      theme: "light",
       maxBubbles: 12,
       typingIndicators: false,
       globalChat: false,
@@ -53,6 +56,7 @@ describe("settings", () => {
       normalizeSettings({
         layout: "grid",
         side: 3,
+        theme: "neon",
         maxBubbles: "lots",
         sound: "yes",
         groupSound: null,
@@ -72,5 +76,17 @@ describe("settings", () => {
     await saveSettings({ ...DEFAULT_SETTINGS, side: "left" });
     const stored = await chrome.storage.local.get(SETTINGS_KEY);
     expect(stored[SETTINGS_KEY]).toMatchObject({ side: "left" });
+  });
+
+  it("tells open pages when the theme changes, and only then", async () => {
+    const listener = jest.fn();
+    watchTheme(listener);
+    await saveSettings({ ...DEFAULT_SETTINGS, theme: "ember" });
+    await saveSettings({ ...DEFAULT_SETTINGS, theme: "ember", sound: true });
+    await chrome.storage.local.set({ dockState: { collapsed: true } });
+    expect(listener.mock.calls).toEqual([["ember"]]);
+    // Cleared settings: back to the default
+    await chrome.storage.local.remove(SETTINGS_KEY);
+    expect(listener.mock.calls).toEqual([["ember"], ["gray"]]);
   });
 });

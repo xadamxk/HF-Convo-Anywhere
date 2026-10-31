@@ -32,7 +32,8 @@ export async function renderOptions(root: HTMLElement): Promise<void> {
     settings = { ...settings, ...change };
     try {
       await saveSettings(settings);
-      showStatus("Saved. Reload HF pages to apply.");
+      const live = Object.keys(change).every((key) => key === "theme");
+      showStatus(live ? "Saved." : "Saved. Reload HF pages to apply.");
     } catch (error) {
       showStatus(`Couldn't save: ${(error as Error)?.message}`, true);
     }
@@ -113,15 +114,33 @@ function settingRow(
         input.addEventListener("change", () => {
           if (input.checked) save({ [setting.id]: option.value });
         });
-        return el("label", { class: "choice" }, [input, option.label]);
+        const swatches =
+          option.swatches &&
+          el(
+            "span",
+            { class: "swatches", "aria-hidden": "true" },
+            option.swatches.map((color) =>
+              el("span", { class: "swatch", style: `background: ${color}` })
+            )
+          );
+        return el("label", { class: "choice" }, [
+          input,
+          option.label,
+          swatches,
+        ]);
       });
+      const swatched = setting.options.some((option) => option.swatches);
       return el(
         "fieldset",
         { class: "row radio", "aria-describedby": description.id },
         [
           el("legend", null, setting.label),
           description,
-          el("div", { class: "choices" }, options),
+          el(
+            "div",
+            { class: swatched ? "choices swatched" : "choices" },
+            options
+          ),
         ]
       );
     }

@@ -8,7 +8,7 @@
 
 If you've used Messenger, you already know how this works. [b]HF Convo Anywhere[/b] turns Convo into a chat dock that follows you to every page of Hack Forums. Your DMs, group chats and the global chat are always one click away, so you can keep browsing threads and still reply in seconds.
 
-No setup: install it, refresh HF, and your chats are there. Want it your way? Pick bubbles or a list, left or right side, sounds and more, all from one settings page.
+No setup: install it, refresh HF, and your chats are there. Want it your way? Pick bubbles or a list, left or right side, one of 15 color themes, sounds and more, all from one settings page.
 
 [size=x-large]Features[/size]
 [list]
@@ -27,8 +27,11 @@ A "New messages" line marks what came in while you were away, with a button to j
 [*][size=large]Emoji and Images[/size]
 An emoji picker with your recent emoji, plus images by attaching, pasting or dragging them in. Click any image to view it full size.
 [spoiler=Emoji Picker][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/store/3-emoji.png?raw=true[/img][/spoiler]
+[*][size=large]15 Color Themes[/size]
+Make the dock yours: Gray, HF Purple and HFX Blue, Midnight and High Contrast, or something bolder like Synthwave, Ocean, Sunset and Crimson. Pick one and open HF pages change right away.
+[spoiler=Themes][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/store/7-themes.png?raw=true[/img][/spoiler]
 [*][size=large]Your Settings, One Page[/size]
-Bubbles or list, left or right side, how many conversations to show, sounds and more.
+Bubbles or list, left or right side, your theme, how many conversations to show, sounds and more.
 [spoiler=Settings][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/store/5-settings.png?raw=true[/img][/spoiler]
 [*][size=large]And More[/size]
 Convo buttons on profiles and posts open the chat right in the dock, unsent messages follow you between pages, Convo's message sound (mentions only or every message for group chats), and an option to hide Stanley's notices in the global chat.

@@ -58,6 +58,7 @@ describe("options page", () => {
     };
     radio(root, "layout", "list").click();
     radio(root, "side", "left").click();
+    radio(root, "theme", "solarized").click();
     radio(root, "groupSound", "all").click();
     const count = input(root, "maxBubbles");
     count.value = "15";
@@ -75,6 +76,7 @@ describe("options page", () => {
     expect(await loadSettings()).toEqual({
       layout: "list",
       side: "left",
+      theme: "solarized",
       maxBubbles: 15,
       typingIndicators: false,
       globalChat: false,
@@ -85,6 +87,46 @@ describe("options page", () => {
       groupSound: "all",
     });
     expect(root.querySelector(".status")?.textContent).toContain("Saved");
+  });
+
+  it("shows each theme with its colors", async () => {
+    const root = await render();
+    const choices = Array.from(
+      root.querySelectorAll<HTMLInputElement>('input[name="theme"]')
+    ).map((input) => input.closest("label")!);
+    expect(choices.map((label) => label.textContent)).toEqual([
+      "Gray",
+      "HF Purple",
+      "HFX Blue",
+      "Midnight",
+      "High Contrast",
+      "Ember",
+      "Solarized",
+      "Forest",
+      "Light",
+      "Synthwave",
+      "Ocean",
+      "Sunset",
+      "Crimson",
+      "Matrix",
+      "Sakura",
+    ]);
+    for (const label of choices) {
+      expect(label.querySelectorAll(".swatch")).toHaveLength(4);
+    }
+    expect(radio(root, "theme", "gray").checked).toBe(true);
+  });
+
+  it("says a new theme shows without reloading", async () => {
+    const root = await render();
+    radio(root, "theme", "midnight").click();
+    await flush();
+    expect(root.querySelector(".status")?.textContent).toBe("Saved.");
+    radio(root, "side", "left").click();
+    await flush();
+    expect(root.querySelector(".status")?.textContent).toBe(
+      "Saved. Reload HF pages to apply."
+    );
   });
 
   it("keeps the conversation count in range", async () => {

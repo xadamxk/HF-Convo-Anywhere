@@ -3,9 +3,12 @@
  * and reading/writing them in chrome.storage.local.
  */
 
+import { THEMES, ThemeId, themeSwatches } from "./chat/themes";
+
 export interface ConvoSettings {
   layout: "bubbles" | "list";
   side: "left" | "right";
+  theme: ThemeId;
   maxBubbles: number;
   typingIndicators: boolean;
   globalChat: boolean;
@@ -36,7 +39,8 @@ export interface CheckboxDefinition extends BaseDefinition<
 export interface RadioDefinition extends BaseDefinition<KeysOfType<string>> {
   type: "radio";
   default: string;
-  options: { label: string; value: string }[];
+  /** Colors shown beside an option (the themes) */
+  options: { label: string; value: string; swatches?: string[] }[];
 }
 
 export interface NumberDefinition extends BaseDefinition<KeysOfType<number>> {
@@ -75,6 +79,19 @@ export const SETTINGS: SettingDefinition[] = [
       { label: "Right", value: "right" },
       { label: "Left", value: "left" },
     ],
+  },
+  {
+    type: "radio",
+    id: "theme",
+    label: "Theme",
+    description:
+      "The chat dock's colors. Changes show on open HF pages right away.",
+    default: "gray",
+    options: THEMES.map((theme) => ({
+      label: theme.label,
+      value: theme.id,
+      swatches: themeSwatches(theme),
+    })),
   },
   {
     type: "number",
@@ -242,4 +259,17 @@ export async function setStorageItem(
 
 export async function clearStorageItem(key: string): Promise<void> {
   await chrome.storage.local.remove(key);
+}
+
+/**
+ * Call `listener` with the theme whenever the saved settings change it (the
+ * settings page saves as soon as one is picked), so open pages follow along.
+ */
+export function watchTheme(listener: (theme: ThemeId) => void): void {
+  chrome.storage.onChanged.addListener((changes, area) => {
+    const change = changes[SETTINGS_KEY];
+    if (area !== "local" || !change) return;
+    const theme = normalizeSettings(change.newValue).theme;
+    if (theme !== normalizeSettings(change.oldValue).theme) listener(theme);
+  });
 }
