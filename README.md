@@ -1,30 +1,37 @@
-# HF Convo Anywhere
+<div align="center">
+<h1>HF Convo Anywhere</h1>
+Chat in Convo from anywhere on HackForums - your DMs, group chats and the global chat in a Messenger-style dock
+  <br>
+  <br>
+  <img src="https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/banners/banner-large-blue.png?raw=true" title="Logo"  />
+</div>
 
-A Manifest V3 browser extension that lets you chat in Hack Forums' Convo from any page: a Messenger-style dock with your DMs, group chats and the global chat, typing indicators, commands, mentions, emoji, image attachments and message sounds. It is hidden on `convo.php`, where HF's own client is open.
+<details> 
+  <summary>Chats on Any Page:</summary>
+  <img src="https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/screenshots/1-chats-on-any-page.png?raw=true" title="Chats on Any Page"  />
+</details>
 
-It is a standalone copy of HFX's "Convo Anywhere" feature (`src/features/convo` in [HFX2.0](https://github.com/xadamxk/HFX2.0)). Here it always runs while the extension is installed.
+<details> 
+  <summary>Global Chat, Group Chats and Commands:</summary>
+  <img src="https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/screenshots/2-global-and-group-chat.png?raw=true" title="Global Chat, Group Chats and Commands"  />
+</details>
 
-## Development
+<details> 
+  <summary>Replies and Emoji:</summary>
+  <img src="https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/screenshots/3-dm-reply-and-emoji.png?raw=true" title="Replies and Emoji"  />
+</details>
 
-```bash
-npm install
-npm run build      # production build to dist/
-npm run dev        # development build, rebuilds on change
-npm run typecheck
-npm test
-npm run lint
-```
+<details> 
+  <summary>Bubbles Layout:</summary>
+  <img src="https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/screenshots/4-bubbles-and-global-chat.png?raw=true" title="Bubbles Layout"  />
+</details>
 
-Load `dist/` as an unpacked extension (`chrome://extensions`, Developer mode, "Load unpacked").
+<details> 
+  <summary>Group Chat Bubbles:</summary>
+  <img src="https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/screenshots/5-bubbles-with-group-chats.png?raw=true" title="Group Chat Bubbles"  />
+</details>
 
-## Layout
-
-- `src/content.ts`: content script entry, starts `ConvoAnywhere` on `https://hackforums.net/*`.
-- `src/ConvoAnywhere.ts`: wires settings and storage into the chat dock (ported from HFX's `ChatBubbles` feature).
-- `src/chat/`, `src/common/`: the chat code, copied from HFX with its tests.
-- `src/core/`: the few HFX helpers the chat code needs (DOM building, logging, page fetching, page info).
-- `src/settings.ts`: every setting's definition, defaults and storage (`chrome.storage.local`).
-- `src/options/`: the settings page (`options_ui`). Settings save as they change and apply on the next HF page load.
-- `assets/icon.svg`: the icon, an HF speech bubble in HFX's outlined style. `scripts/make-icons.js` draws it into the 16/32/48/128 PNGs in `src/assets/icons` (`npm run icons`); change both together.
-
-The toolbar button has no popup or click action yet.
+<details> 
+  <summary>Settings:</summary>
+  <img src="https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/screenshots/6-settings-page.png?raw=true" title="Settings"  />
+</details>

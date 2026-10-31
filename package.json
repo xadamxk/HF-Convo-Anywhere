@@ -7,6 +7,8 @@
     "dev": "webpack --config=config/webpack.dev.ts",
     "build": "webpack --config=config/webpack.prod.ts",
     "icons": "node scripts/make-icons.js",
+    "banners": "node scripts/make-banners.js",
+    "banners:png": "node scripts/render-banners.js",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.jest.json",
     "lint": "eslint .",
     "format": "prettier --write .",
