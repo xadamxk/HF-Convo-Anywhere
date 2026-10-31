@@ -1,11 +1,12 @@
 {
   "name": "hf-convo-anywhere",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Chat in Hack Forums' Convo from any page, a native browser extension.",
   "private": true,
   "scripts": {
     "dev": "webpack --config=config/webpack.dev.ts",
     "build": "webpack --config=config/webpack.prod.ts",
+    "package": "npm run build && node scripts/package.js",
     "icons": "node scripts/make-icons.js",
     "banners": "node scripts/make-banners.js",
     "banners:png": "node scripts/render-banners.js",
@@ -17,7 +18,7 @@
     "test:watch": "jest --watch"
   },
   "author": "xadamxk",
-  "license": "GPL-3.0-or-later",
+  "license": "SEE LICENSE IN LICENSE",
   "devDependencies": {
     "@eslint/js": "^9.39.5",
     "@types/chrome": "^0.0.332",

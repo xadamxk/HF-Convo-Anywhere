@@ -1,0 +1,53 @@
+HF Convo Anywhere License
+
+Copyright (c) 2026 xadamxk. All rights reserved.
+
+This license covers the source code, build scripts, icons, banners and other
+files in this repository (the "Software").
+
+1. What you may do
+
+   You may, free of charge:
+
+   a. view, read and study the Software;
+   b. fork this repository on GitHub and change the Software in your fork;
+   c. build the Software and load it in your own browser for your own
+      personal use; and
+   d. propose changes to this project, for example as pull requests or issues.
+
+2. What you may not do without written permission
+
+   Unless the copyright holder has given you permission in writing, you may
+   not:
+
+   a. publish, distribute, sublicense or sell the Software, or any modified
+      version of it or work based on it, in any form, including through the
+      Chrome Web Store, Firefox Add-ons, Microsoft Edge Add-ons, Opera
+      add-ons, any other extension or app store, or any download site; or
+   b. use the name "HF Convo Anywhere", or its icon or banners, for any other
+      extension, product or service.
+
+   Hosting a fork on GitHub, as allowed in section 1, is not distribution
+   under section 2.
+
+3. Contributions
+
+   By submitting a contribution to this project, you agree that it may be
+   used, changed and distributed as part of the Software under this license.
+
+4. Notices
+
+   You must keep this license and the copyright notice above in every copy
+   or fork of the Software.
+
+5. No warranty
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+   DEALINGS IN THE SOFTWARE.
+
+HF Convo Anywhere is not affiliated with or endorsed by Hack Forums.

@@ -245,7 +245,7 @@ export class GroupChatWindow extends RoomChatWindow {
       href: `${origin}/convo.php?action=group&gid=${options.gid}`,
       icon: GROUP_ICON,
       placeholder: `Message ${options.name}`,
-      noImagesNotice: "Images can't be sent to group chats from HFX yet.",
+      noImagesNotice: "Images can't be sent to group chats from here yet.",
       headerExtras: [membersButton],
       listTop: [olderButton],
     });

@@ -258,7 +258,7 @@ describe("GroupChatWindow", () => {
     );
     expect(
       win.root.querySelector(":scope > .hfx-chat-notice")!.textContent
-    ).toBe("Images can't be sent to group chats from HFX yet.");
+    ).toBe("Images can't be sent to group chats from here yet.");
     // No + button where images can't be sent
     expect(win.root.querySelector(".hfx-chat-attach")).toBeNull();
   });
