@@ -2,15 +2,17 @@
 // banner: the title over a doodle pattern, and a browser window showing an HF
 // page with Convo Anywhere's bubbles and two chat windows (shapes only, no
 // text). Three colours, three sizes: 920×680 and 440×280 like HFX, and
-// the Chrome Web Store marquee (1400×560).
+// the Chrome Web Store marquee (1400×560). Also two forum signatures
+// (assets/signatures) in the same colours.
 // Run with `npm run banners`; `npm run banners:png` then renders the PNGs.
 const fs = require("fs");
 const path = require("path");
 
+// `cta`: text on the white call-to-action pill
 const VARIANTS = {
-  purple: { background: "#4d2f5d", pattern: "#432851" },
-  blue: { background: "#00aaff", pattern: "#009bff" },
-  grey: { background: "#2c2c2c", pattern: "#363636" },
+  purple: { background: "#4d2f5d", pattern: "#432851", cta: "#4d2f5d" },
+  blue: { background: "#00aaff", pattern: "#009bff", cta: "#0072b5" },
+  grey: { background: "#2c2c2c", pattern: "#363636", cta: "#2c2c2c" },
 };
 
 // HF's page colours: black body, #333 rows, purple section headers
@@ -388,10 +390,119 @@ function marquee(variant) {
   );
 }
 
+// ---- Forum signatures (HF allows up to 650×200 and 500KB) ----
+
+/** The extension's icon (assets/icon.svg), `size` pixels square, centred. */
+function appIcon(cx, cy, size) {
+  const s = size / 128;
+  return [
+    `<g transform="translate(${r1(cx - 64 * s)} ${r1(cy - 64 * s)}) scale(${r1(s * 1000) / 1000})">`,
+    `<path d="M10 14 L118 14 L118 86 L62 86 L32 114 L32 86 L10 86 Z" fill="#2c2c2c" stroke="#ffffff" stroke-width="7"/>`,
+    `<path d="M34 30 V70 M56 30 V70 M34 50 H56 M76 30 V70 M70.5 35.5 H98 M76 50 H94" stroke="#ffffff" stroke-width="11" fill="none"/>`,
+    `</g>`,
+  ].join("");
+}
+
+/** A pill-shaped call to action, centred on `cx`. */
+function pill(cx, cy, width, height, fill, color, label, size) {
+  return [
+    `<rect x="${r1(cx - width / 2)}" y="${r1(cy - height / 2)}" width="${width}" height="${height}" rx="${height / 2}" fill="${fill}"/>`,
+    `<text x="${cx}" y="${r1(cy + size * 0.36)}" text-anchor="middle" font-family="${FONT}" font-weight="700" font-size="${size}" fill="${color}">${label}</text>`,
+  ].join("");
+}
+
+/**
+ * Signature 1 (650×200): the name, tagline and call to action on the left,
+ * and a close-up of the dock (two chat windows and the bubbles) on the right.
+ */
+function signatureShowcase(variant) {
+  const scale = 0.66;
+  const shot = { x: 312, y: 12, width: 326, height: 176 };
+  // The browser's right edge on the shot's, its windows' bottoms on its bottom
+  const left = r1(shot.x + shot.width - WIDTH * scale);
+  const top = r1(shot.y + shot.height - BOTTOM * scale);
+  return svg(
+    650,
+    200,
+    variant,
+    [
+      pattern(650, 200, variant.pattern, 34, 0.7, 4),
+      title(160, ["HF CONVO", "ANYWHERE"], 36, 64, 42),
+      `<text x="160" y="134" text-anchor="middle" font-family="${FONT}" font-weight="600" font-size="16" fill="#ffffff" opacity="0.9">Messenger-style chat for HF</text>`,
+      pill(
+        160,
+        166,
+        262,
+        34,
+        "#ffffff",
+        variant.cta,
+        "Install free · Chrome &amp; Firefox",
+        15
+      ),
+      `<clipPath id="shot"><rect x="${shot.x}" y="${shot.y}" width="${shot.width}" height="${shot.height}" rx="10"/></clipPath>`,
+      `<g clip-path="url(#shot)"><g transform="translate(${left} ${top}) scale(${scale})">${browser()}</g></g>`,
+      `<rect x="${shot.x}" y="${shot.y}" width="${shot.width}" height="${shot.height}" rx="10" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="2"/>`,
+    ].join("\n")
+  );
+}
+
+/**
+ * Signature 2 (650×120): a Convo message from the extension under a "New
+ * messages" line, with an Install pill and a small bubble column beside it.
+ */
+function signatureMessage(variant) {
+  const card = { x: 8, y: 30, width: 560, height: 82 };
+  const mid = card.x + card.width / 2;
+  const cy = card.y + card.height / 2;
+  // The dock's bubbles, shrunk: launcher, global chat (open), then two DMs
+  const dock = [
+    `<circle cx="0" cy="0" r="${R}" fill="#262626" stroke="#3a3a3a" stroke-width="1"/>`,
+    chatIcon(0, -1, "#e6e6e6"),
+    `<circle cx="0" cy="-42" r="${R}" fill="#262626"/>`,
+    `<circle cx="0" cy="-42" r="${R + 3}" fill="none" stroke="#ffffff" stroke-width="2"/>`,
+    globeIcon(0, -42, 8, "#e6e6e6"),
+    `<circle cx="0" cy="-84" r="${R}" fill="url(#av0)"/>`,
+    presenceDot(12, -96, "online"),
+    badge(12, -72),
+    `<circle cx="0" cy="-126" r="${R}" fill="url(#av2)"/>`,
+    presenceDot(12, -138, "away"),
+  ].join("");
+  return svg(
+    650,
+    120,
+    variant,
+    [
+      pattern(650, 120, variant.pattern, 30, 0.6, 5),
+      // The "New messages" line, as the extension draws it
+      `<path d="M${card.x + 6} 16 H${mid - 62} M${mid + 62} 16 H${card.x + card.width - 6}" stroke="#e0868a" stroke-width="2" stroke-linecap="round"/>`,
+      `<text x="${mid}" y="20" text-anchor="middle" font-family="${FONT}" font-weight="700" font-size="11" letter-spacing="1" fill="#ffd0d3">NEW MESSAGES</text>`,
+      `<rect x="${card.x}" y="${card.y}" width="${card.width}" height="${card.height}" rx="14" fill="#242424" stroke="#3d3d3d" stroke-width="1.5"/>`,
+      `<circle cx="${card.x + 42}" cy="${cy}" r="29" fill="#1a1a1a"/>`,
+      appIcon(card.x + 42, cy + 2, 44),
+      `<text x="${card.x + 84}" y="${cy - 6}" font-family="${FONT}" font-weight="700" font-size="19" fill="#ffd200">HF Convo Anywhere<tspan dx="10" font-size="12" font-weight="400" fill="#8a8a8a">now</tspan></text>`,
+      `<text x="${card.x + 84}" y="${cy + 20}" font-family="${FONT}" font-size="16" fill="#e6e6e6">Messenger-style chat on every HF page</text>`,
+      pill(
+        card.x + card.width - 70,
+        cy,
+        112,
+        34,
+        "#4d2f5d",
+        "#ffffff",
+        "Get it free",
+        15
+      ),
+      `<g transform="translate(612 104) scale(0.72)">${dock}</g>`,
+    ].join("\n")
+  );
+}
+
 const BANNERS = { large, small, marquee };
+const SIGNATURES = { showcase: signatureShowcase, message: signatureMessage };
 
 const outDir = path.resolve(__dirname, "../assets/banners");
+const signatureDir = path.resolve(__dirname, "../assets/signatures");
 fs.mkdirSync(outDir, { recursive: true });
+fs.mkdirSync(signatureDir, { recursive: true });
 for (const [name, variant] of Object.entries(VARIANTS)) {
   for (const [size, draw] of Object.entries(BANNERS)) {
     fs.writeFileSync(
@@ -399,7 +510,14 @@ for (const [name, variant] of Object.entries(VARIANTS)) {
       draw(variant)
     );
   }
+  for (const [design, draw] of Object.entries(SIGNATURES)) {
+    fs.writeFileSync(
+      path.join(signatureDir, `signature-${design}-${name}.svg`),
+      draw(variant)
+    );
+  }
 }
+const count = (map) => Object.keys(VARIANTS).length * Object.keys(map).length;
 console.log(
-  `Wrote ${Object.keys(VARIANTS).length * Object.keys(BANNERS).length} banners to ${outDir}`
+  `Wrote ${count(BANNERS)} banners to ${outDir} and ${count(SIGNATURES)} signatures to ${signatureDir}`
 );

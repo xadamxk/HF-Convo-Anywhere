@@ -9,7 +9,7 @@
     "package": "npm run build && node scripts/package.js",
     "icons": "node scripts/make-icons.js",
     "banners": "node scripts/make-banners.js",
-    "banners:png": "node scripts/render-banners.js",
+    "banners:png": "node scripts/render-banners.js && node scripts/render-banners.js assets/signatures",
     "buttons": "node scripts/make-buttons.js",
     "buttons:png": "node scripts/render-banners.js assets/buttons --transparent",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.jest.json",
