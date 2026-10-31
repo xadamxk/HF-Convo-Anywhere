@@ -22,6 +22,11 @@ Chat in Convo from anywhere on HackForums - your DMs, group chats and the global
 </details>
 
 <details> 
+  <summary>Commands and Mentions:</summary>
+  <img src="https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/store/6-commands-and-mentions.png?raw=true" title="Commands and Mentions"  />
+</details>
+
+<details> 
   <summary>List Layout:</summary>
   <img src="https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/store/4-list-layout.png?raw=true" title="List Layout"  />
 </details>
