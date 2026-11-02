@@ -51,20 +51,20 @@ Enjoying it? A review in the [url=https://chromewebstore.google.com/detail/njcdk
 Want to spread the word? Pick a signature below and paste its code into your signature ([url=https://hackforums.net/usercp.php?action=editsig]User CP > Edit Signature[/url]).
 [spoiler=Signatures]
 [align=center][b]Showcase - Purple[/b]
-[img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-showcase-purple.png?raw=true[/img][/align]
-[code][align=center][url=https://hackforums.net/showthread.php?tid=6335202][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-showcase-purple.png?raw=true[/img][/url][/align][/code]
+[img]https://cdn.jsdelivr.net/gh/xadamxk/HF-Convo-Anywhere@2ac376d0fdabeaa3d7e6567a273fda08e0f8c3ca/assets/signatures/signature-showcase-purple.png[/img][/align]
+[code][align=center][url=https://hackforums.net/showthread.php?tid=6335202][img]https://cdn.jsdelivr.net/gh/xadamxk/HF-Convo-Anywhere@2ac376d0fdabeaa3d7e6567a273fda08e0f8c3ca/assets/signatures/signature-showcase-purple.png[/img][/url][/align][/code]
 
 [align=center][b]Showcase - Blue[/b]
-[img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-showcase-blue.png?raw=true[/img][/align]
-[code][align=center][url=https://hackforums.net/showthread.php?tid=6335202][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-showcase-blue.png?raw=true[/img][/url][/align][/code]
+[img]https://cdn.jsdelivr.net/gh/xadamxk/HF-Convo-Anywhere@2ac376d0fdabeaa3d7e6567a273fda08e0f8c3ca/assets/signatures/signature-showcase-blue.png[/img][/align]
+[code][align=center][url=https://hackforums.net/showthread.php?tid=6335202][img]https://cdn.jsdelivr.net/gh/xadamxk/HF-Convo-Anywhere@2ac376d0fdabeaa3d7e6567a273fda08e0f8c3ca/assets/signatures/signature-showcase-blue.png[/img][/url][/align][/code]
 
 [align=center][b]Message - Purple[/b]
-[img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-message-purple.png?raw=true[/img][/align]
-[code][align=center][url=https://hackforums.net/showthread.php?tid=6335202][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-message-purple.png?raw=true[/img][/url][/align][/code]
+[img]https://cdn.jsdelivr.net/gh/xadamxk/HF-Convo-Anywhere@2ac376d0fdabeaa3d7e6567a273fda08e0f8c3ca/assets/signatures/signature-message-purple.png[/img][/align]
+[code][align=center][url=https://hackforums.net/showthread.php?tid=6335202][img]https://cdn.jsdelivr.net/gh/xadamxk/HF-Convo-Anywhere@2ac376d0fdabeaa3d7e6567a273fda08e0f8c3ca/assets/signatures/signature-message-purple.png[/img][/url][/align][/code]
 
 [align=center][b]Message - Blue[/b]
-[img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-message-blue.png?raw=true[/img][/align]
-[code][align=center][url=https://hackforums.net/showthread.php?tid=6335202][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-message-blue.png?raw=true[/img][/url][/align][/code]
+[img]https://cdn.jsdelivr.net/gh/xadamxk/HF-Convo-Anywhere@2ac376d0fdabeaa3d7e6567a273fda08e0f8c3ca/assets/signatures/signature-message-blue.png[/img][/align]
+[code][align=center][url=https://hackforums.net/showthread.php?tid=6335202][img]https://cdn.jsdelivr.net/gh/xadamxk/HF-Convo-Anywhere@2ac376d0fdabeaa3d7e6567a273fda08e0f8c3ca/assets/signatures/signature-message-blue.png[/img][/url][/align][/code]
 [/spoiler]
 
 [size=x-large]Found a Bug?[/size]
