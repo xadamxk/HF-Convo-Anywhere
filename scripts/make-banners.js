@@ -372,6 +372,24 @@ function small(variant) {
   );
 }
 
+/** The large banner as a Web Store screenshot (1280×800): scaled to the full height, pattern edge to edge. */
+function screenshot(variant) {
+  const scale = 800 / 680;
+  const left = r1((1280 - 920 * scale) / 2);
+  return svg(
+    1280,
+    800,
+    variant,
+    [
+      pattern(1280, 800, variant.pattern, r1(46 * scale), r1(scale), 4),
+      `<g transform="translate(${left} 0) scale(${r1(scale * 1000) / 1000})">`,
+      title(460, ["HF CONVO", "ANYWHERE"], 52, 96, 58),
+      `<g transform="translate(16 207)">${browser()}</g>`,
+      `</g>`,
+    ].join("\n")
+  );
+}
+
 /** The Chrome Web Store's marquee tile: title on the left, browser on the right. */
 function marquee(variant) {
   const scale = 0.86;
@@ -496,7 +514,7 @@ function signatureMessage(variant) {
   );
 }
 
-const BANNERS = { large, small, marquee };
+const BANNERS = { large, small, marquee, screenshot };
 const SIGNATURES = { showcase: signatureShowcase, message: signatureMessage };
 
 const outDir = path.resolve(__dirname, "../assets/banners");
