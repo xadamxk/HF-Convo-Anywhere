@@ -52,27 +52,19 @@ Want to spread the word? Pick a signature below and paste its code into your sig
 [spoiler=Signatures]
 [align=center][b]Showcase - Purple[/b]
 [img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-showcase-purple.png?raw=true[/img][/align]
-[code][align=center][url=RELEASE_THREAD_URL][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-showcase-purple.png?raw=true[/img][/url][/align][/code]
+[code][align=center][url=https://hackforums.net/showthread.php?tid=6335202][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-showcase-purple.png?raw=true[/img][/url][/align][/code]
 
 [align=center][b]Showcase - Blue[/b]
 [img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-showcase-blue.png?raw=true[/img][/align]
-[code][align=center][url=RELEASE_THREAD_URL][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-showcase-blue.png?raw=true[/img][/url][/align][/code]
-
-[align=center][b]Showcase - Grey[/b]
-[img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-showcase-grey.png?raw=true[/img][/align]
-[code][align=center][url=RELEASE_THREAD_URL][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-showcase-grey.png?raw=true[/img][/url][/align][/code]
+[code][align=center][url=https://hackforums.net/showthread.php?tid=6335202][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-showcase-blue.png?raw=true[/img][/url][/align][/code]
 
 [align=center][b]Message - Purple[/b]
 [img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-message-purple.png?raw=true[/img][/align]
-[code][align=center][url=RELEASE_THREAD_URL][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-message-purple.png?raw=true[/img][/url][/align][/code]
+[code][align=center][url=https://hackforums.net/showthread.php?tid=6335202][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-message-purple.png?raw=true[/img][/url][/align][/code]
 
 [align=center][b]Message - Blue[/b]
 [img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-message-blue.png?raw=true[/img][/align]
-[code][align=center][url=RELEASE_THREAD_URL][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-message-blue.png?raw=true[/img][/url][/align][/code]
-
-[align=center][b]Message - Grey[/b]
-[img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-message-grey.png?raw=true[/img][/align]
-[code][align=center][url=RELEASE_THREAD_URL][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-message-grey.png?raw=true[/img][/url][/align][/code]
+[code][align=center][url=https://hackforums.net/showthread.php?tid=6335202][img]https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/assets/signatures/signature-message-blue.png?raw=true[/img][/url][/align][/code]
 [/spoiler]
 
 [size=x-large]Found a Bug?[/size]
