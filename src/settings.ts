@@ -170,7 +170,7 @@ export const SETTINGS: SettingDefinition[] = [
     id: "sharedConnection",
     label: "Share one connection across tabs",
     description:
-      "All your open HF tabs share one connection to Convo instead of opening one each. Turn off if chats misbehave with several tabs open.",
+      "Your open HF tabs share one connection to Convo, held by the tab you're looking at, instead of opening one each. Turn off if chats misbehave with several tabs open.",
     default: true,
   },
 ];

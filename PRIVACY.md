@@ -1,6 +1,6 @@
 # Privacy Policy
 
-_Last updated: October 31, 2026_
+_Last updated: November 4, 2026_
 
 HF Convo Anywhere is a browser extension that shows Hack Forums' Convo chat (your direct messages, group chats and the global chat) on every Hack Forums page. This policy explains what data it handles and where that data goes.
 
@@ -17,6 +17,7 @@ To work, the extension reads and sends the same data as Hack Forums' own Convo p
 ## Where data goes
 
 - **Only to Hack Forums** (`hackforums.net`), over the same connections Hack Forums' own Convo uses (`/convo.php` and its `/convo-ws` connection).
+- **Between your own Hack Forums tabs.** So that your open Hack Forums tabs share one Convo connection instead of opening one each, the tab holding the connection passes chat data to your other open Hack Forums tabs, inside your browser. It never leaves your browser this way. You can turn this off with the "Share one connection across tabs" setting.
 - **Nowhere else.** The extension has no analytics, tracking, ads or servers of its own, and sends nothing to the developer or any third party.
 - **Images in messages.** When a message contains an image link (for example a GIF), your browser loads that image from the site it is hosted on, just as it does on convo.php. Convo's own "/embed hide" setting is respected.
 
