@@ -14,10 +14,15 @@ import { userLabel } from "./roomLayout";
  * added, which is all convo.php shows) and the replied-to message travels in
  * the message's `requestId`.
  *
- * Why the requestId: the client picks it, the server stores it and sends it
- * to everyone with the message (live and in history), and convo.php never
- * shows it (verified 2026-11-03 in the global room). So nothing extra appears
- * for people without the extension.
+ * Why the requestId: the client picks it, the server sends it with the
+ * message, and convo.php never shows it. So nothing extra appears for people
+ * without the extension.
+ *
+ * Where it lasts (checked 2026-11-03): the global room sends it to everyone,
+ * live and in its history. DM and group convo history has no requestId at all
+ * (not even on your own messages), so there a quote only shows while the
+ * reply is live and turns into a plain message on reload. Whether the other
+ * person gets it live in DMs and groups wasn't seen yet. Accepted as is.
  *
  * Format: still a valid version 4 UUID, in case the server ever checks:
  *
