@@ -70,6 +70,7 @@ describe("options page", () => {
       "groupChats",
       "convoLinks",
       "sound",
+      "sharedConnection",
     ].forEach(check);
     await flush();
 
@@ -85,6 +86,7 @@ describe("options page", () => {
       convoLinks: false,
       sound: true,
       groupSound: "all",
+      sharedConnection: false,
     });
     expect(root.querySelector(".status")?.textContent).toContain("Saved");
   });

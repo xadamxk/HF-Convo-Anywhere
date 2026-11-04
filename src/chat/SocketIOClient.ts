@@ -166,6 +166,9 @@ export class SocketIOClient implements ConvoSocket {
   > & { createSocket: (url: string) => WebSocketLike };
   private socket: WebSocketLike | null = null;
   private readonly handlers = new Map<string, Set<Handler>>();
+  private readonly anyHandlers = new Set<
+    (event: string, ...args: any[]) => void
+  >();
   private readonly acks = new Map<number, (...args: any[]) => void>();
   private nextAckId = 0;
   private attempts = 0;
@@ -197,6 +200,16 @@ export class SocketIOClient implements ConvoSocket {
 
   off(event: string, handler: Handler): this {
     this.handlers.get(event)?.delete(handler);
+    return this;
+  }
+
+  /**
+   * Hear every event, server and lifecycle (connect, disconnect,
+   * connect_error, reconnect_failed), after its own handlers. For passing
+   * them on to other tabs.
+   */
+  onAny(handler: (event: string, ...args: any[]) => void): this {
+    this.anyHandlers.add(handler);
     return this;
   }
 
@@ -397,6 +410,13 @@ export class SocketIOClient implements ConvoSocket {
     for (const handler of Array.from(this.handlers.get(event) ?? [])) {
       try {
         handler(...args);
+      } catch (error) {
+        Logger.error(`Convo socket handler for ${event} failed`, error);
+      }
+    }
+    for (const handler of Array.from(this.anyHandlers)) {
+      try {
+        handler(event, ...args);
       } catch (error) {
         Logger.error(`Convo socket handler for ${event} failed`, error);
       }

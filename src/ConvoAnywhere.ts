@@ -1,5 +1,6 @@
 import { ChatDock, DEFAULT_DOCK_STATE, DockState } from "./chat/ChatDock";
-import { ConvoClient } from "./chat/ConvoClient";
+import { ConvoClient, convoSocketUrl } from "./chat/ConvoClient";
+import { sharedSocketFactory } from "./chat/SharedSocket";
 import { interceptConvoLinks, pageUserHint } from "./chat/convoLinks";
 import { fetchGroupList, GroupInfo } from "./chat/groupList";
 import { GlobalChatWindow } from "./chat/GlobalChatWindow";
@@ -61,7 +62,16 @@ export class ConvoAnywhere {
     if (!postKey || !this.shouldRun()) return;
 
     addCssToPage(CHAT_DOCK_CSS);
-    const client = new ConvoClient({ postKey });
+    // One Convo socket for all HF tabs (#3); falls back to one per tab
+    const uid = getCurrentUser()?.uid;
+    const createSocket =
+      settings.sharedConnection !== false && uid
+        ? sharedSocketFactory(
+            `hfca-socket:convo:${uid}`,
+            convoSocketUrl(location.origin)
+          )
+        : undefined;
+    const client = new ConvoClient({ postKey, createSocket });
     const sound = settings.sound ? new MessageSound() : undefined;
     const dock = new ChatDock({
       client,

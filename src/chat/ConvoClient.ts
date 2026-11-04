@@ -6,6 +6,7 @@ import {
   RESULT_EVENTS,
 } from "./commandResults";
 import { LinkPreviews, parseEmbed, parsePreviews } from "./formatMessage";
+import { LOADED_PARTY_EVENT } from "./SharedSocket";
 import {
   ConvoSocket,
   CreateConvoSocket,
@@ -15,7 +16,8 @@ import {
 /**
  * Data layer for Convo chat bubbles: talks to HF's Convo websocket (the same
  * one convo.php uses) and keeps conversations and loaded messages in memory.
- * Nothing here is persisted; message bodies never leave this tab.
+ * Nothing here is persisted. With a SharedSocket, messages pass between the
+ * user's own HF tabs, but never leave the browser.
  *
  * Protocol notes (verified 2026-10-20, see #393):
  * - A ticket from `POST /convo.php?action=socket_ticket` authenticates each connection.
@@ -778,6 +780,10 @@ export class ConvoClient {
     socket.on("convo_auth_expired", () => {
       socket.disconnect();
       this.connect();
+    });
+    // A tab sharing this socket loaded a chat, which moves the server's typing scope
+    socket.on(LOADED_PARTY_EVENT, (data: any) => {
+      this.loadedParty = chatKey(Boolean(data?.is_group), toInt(data?.party));
     });
     socket.on("convo_loaded_more_inbox", (data: any) => this.onInbox(data));
     socket.on("convo_receivemessage", (data: any) => this.receive(data, true));

@@ -11,10 +11,14 @@ export interface FakeChannel {
   close(): void;
 }
 
+import { deserialize, serialize } from "v8";
+
+// jsdom has no structuredClone; Node's serializer copies the same way
+// (ArrayBuffers included) and throws on functions, like postMessage
 const copy = <T>(value: T): T =>
   typeof structuredClone === "function"
     ? structuredClone(value)
-    : JSON.parse(JSON.stringify(value));
+    : deserialize(serialize(value));
 
 export class FakeBroadcastBus {
   /** Every message posted, by channel name, for assertions. */
