@@ -553,6 +553,55 @@ describe("ConvoClient", () => {
     ]);
   });
 
+  describe("archive", () => {
+    const loadInbox = async () => {
+      await ready();
+      socket.fire("convo_loaded_more_inbox", {
+        messages: { 900: inboxRow() },
+        users: { [ME.uid]: ME, [OTHER.uid]: OTHER },
+      });
+    };
+
+    it("archives as convo.php does and drops it from the inbox", async () => {
+      socket.ackReplies.do_archive = () => ({ ok: true });
+      await loadInbox();
+      const changed = jest.fn();
+      client.on("conversations", changed);
+      await client.archive(PARTY);
+      expect(socket.acked).toContainEqual(["do_archive", PARTY]);
+      expect(client.conversations.has(PARTY)).toBe(false);
+      expect(changed).toHaveBeenCalled();
+    });
+
+    it("keeps it when the server refuses", async () => {
+      socket.ackReplies.do_archive = () => ({ ok: false, error: "Nope." });
+      await loadInbox();
+      await expect(client.archive(PARTY)).rejects.toThrow("Nope.");
+      expect(client.conversations.has(PARTY)).toBe(true);
+    });
+
+    it("refuses while disconnected", async () => {
+      await expect(client.archive(PARTY)).rejects.toThrow(/disconnected/);
+      expect(socket.acked).toEqual([]);
+    });
+
+    it("drops one archived elsewhere (archive_success)", async () => {
+      await loadInbox();
+      socket.fire("archive_success", String(PARTY));
+      expect(client.conversations.has(PARTY)).toBe(false);
+    });
+
+    it("brings it back when a new message arrives", async () => {
+      socket.ackReplies.do_archive = () => ({ ok: true });
+      await loadInbox();
+      await client.archive(PARTY);
+      socket.fire("convo_receivemessage", live());
+      expect(client.conversations.get(PARTY)?.lastMessage?.text).toBe(
+        "new message"
+      );
+    });
+  });
+
   describe("groups", () => {
     const GID = 48;
     const groupMessage = (overrides: Record<string, unknown> = {}) =>

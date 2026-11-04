@@ -225,6 +225,47 @@ ${DEFAULT_VARS}
 .hfx-chat-row-unread .hfx-chat-row-time { color: var(--hfx-chat-text); }
 .hfx-chat-row-badge { position: static; flex: none; }
 
+/* Archive (×) on a DM's bubble or row, shown while it's hovered or focused */
+.hfx-chat-head-wrap,
+.hfx-chat-row-item { position: relative; }
+.hfx-chat-archive {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--hfx-chat-border);
+  border-radius: 50%;
+  background: var(--hfx-chat-header);
+  color: var(--hfx-chat-text);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.1s ease;
+}
+.hfx-chat-head-wrap:hover .hfx-chat-archive,
+.hfx-chat-row-item:hover .hfx-chat-archive,
+.hfx-chat-archive:focus-visible,
+.hfx-chat-archive:disabled {
+  opacity: 1;
+  pointer-events: auto;
+}
+.hfx-chat-archive:hover { background: var(--hfx-chat-badge); color: var(--hfx-chat-on-badge); }
+.hfx-chat-archive:disabled { cursor: progress; opacity: 0.6; }
+/* Top left of a bubble: the status dot and badge have the right side */
+.hfx-chat-head-wrap .hfx-chat-archive { top: -4px; left: -4px; }
+/* Right of a row, in place of its unread badge while hovered */
+.hfx-chat-row-item .hfx-chat-archive { top: 50%; right: 12px; transform: translateY(-50%); }
+.hfx-chat-row-item:hover .hfx-chat-row-badge { visibility: hidden; }
+@media (prefers-reduced-motion: reduce) {
+  .hfx-chat-archive { transition: none; }
+}
+
 /* Global chat: pinned entries */
 .hfx-chat-head-global {
   display: flex;

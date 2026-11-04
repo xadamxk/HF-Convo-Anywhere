@@ -49,6 +49,10 @@ class FakeClient {
   sendImage = jest.fn(async () => ({ requestId: "req" }));
   send = jest.fn(async () => ({ requestId: "req" }));
   command = jest.fn(async (): Promise<unknown> => undefined);
+  archive = jest.fn(async (partyId: number) => {
+    this.conversations.delete(partyId);
+    this.fire("conversations");
+  });
   connect = jest.fn();
   disconnect = jest.fn();
   createRequestId = () => "req";
@@ -1061,5 +1065,101 @@ describe("ChatDock theme", () => {
     await mount({ theme: "purple" });
     dock!.setTheme("high-contrast");
     expect(root().dataset.theme).toBe("high-contrast");
+  });
+});
+
+describe("ChatDock archiving", () => {
+  const archiveButton = () =>
+    document.querySelector<HTMLButtonElement>(
+      `.hfx-chat-archive[data-archive="${PARTY}"]`
+    );
+  const win = () =>
+    document.querySelector(`.hfx-chat-window[data-party="${PARTY}"]`);
+
+  it("archives a DM from its bubble and closes its window", async () => {
+    await mount();
+    client.fire("conversations");
+    const button = archiveButton()!;
+    expect(button.closest(".hfx-chat-head-wrap")).not.toBeNull();
+    expect(button.getAttribute("aria-label")).toBe(
+      "Archive conversation with Charlie"
+    );
+    button.click();
+    await flush();
+    expect(client.archive).toHaveBeenCalledWith(PARTY);
+    expect(win()).toBeNull();
+    expect(
+      document.querySelector(`.hfx-chat-head[data-party="${PARTY}"]`)
+    ).toBeNull();
+    // Archiving doesn't open the chat
+    expect(client.loadHistory).toHaveBeenCalledTimes(1);
+  });
+
+  it("archives a DM from its list row", async () => {
+    await mount({ layout: "list", open: false });
+    client.fire("conversations");
+    const button = archiveButton()!;
+    expect(button.closest("li.hfx-chat-row-item")).not.toBeNull();
+    button.click();
+    await flush();
+    expect(client.archive).toHaveBeenCalledWith(PARTY);
+    expect(
+      document.querySelector(`.hfx-chat-row[data-party="${PARTY}"]`)
+    ).toBeNull();
+    expect(win()).toBeNull();
+  });
+
+  it("ignores clicks while one is going", async () => {
+    let finish: () => void = () => undefined;
+    client.archive.mockImplementationOnce(
+      () => new Promise<void>((resolve) => (finish = resolve))
+    );
+    await mount({ open: false });
+    client.fire("conversations");
+    archiveButton()!.click();
+    expect(archiveButton()!.disabled).toBe(true);
+    archiveButton()!.click();
+    expect(client.archive).toHaveBeenCalledTimes(1);
+    finish();
+    await flush();
+    expect(archiveButton()!.disabled).toBe(false);
+  });
+
+  it("says why in the chat's window when it fails, and keeps it", async () => {
+    client.archive.mockRejectedValueOnce(new Error("Nope."));
+    await mount();
+    client.fire("conversations");
+    archiveButton()!.click();
+    await flush();
+    expect(win()!.querySelector(":scope > .hfx-chat-notice")!.textContent).toBe(
+      "Couldn't archive the conversation: Nope."
+    );
+    expect(archiveButton()).not.toBeNull();
+  });
+
+  it("alerts when it fails with no window open", async () => {
+    const alertSpy = jest
+      .spyOn(window, "alert")
+      .mockImplementation(() => undefined);
+    client.archive.mockRejectedValueOnce(new Error("Nope."));
+    await mount({ open: false });
+    client.fire("conversations");
+    archiveButton()!.click();
+    await flush();
+    expect(alertSpy).toHaveBeenCalledWith(
+      "Couldn't archive the conversation: Nope."
+    );
+    alertSpy.mockRestore();
+  });
+
+  it("has no archive button on group or global entries", async () => {
+    await mount({ open: false, global: true });
+    client.fire("conversations");
+    expect(document.querySelectorAll(".hfx-chat-archive")).toHaveLength(1);
+    expect(
+      document
+        .querySelector(".hfx-chat-head-global")!
+        .closest(".hfx-chat-head-wrap")
+    ).toBeNull();
   });
 });

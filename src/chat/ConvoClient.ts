@@ -677,6 +677,24 @@ export class ConvoClient {
     });
   }
 
+  /**
+   * Archive a 1:1 conversation, as convo.php's "Archive Convo" button does
+   * (`do_archive`, acked). HF has no delete: archiving takes it off the
+   * inbox, and a new message brings it back. Throws if it didn't go through.
+   */
+  async archive(partyId: number): Promise<void> {
+    await this.command({ event: "do_archive", data: partyId });
+    this.forgetConversation(partyId);
+  }
+
+  /**
+   * Drop an archived conversation from the inbox. Its loaded messages stay,
+   * so reopening it (e.g. from a profile) catches up instead of reloading.
+   */
+  private forgetConversation(partyId: number): void {
+    if (this.conversations.delete(partyId)) this.fire("conversations");
+  }
+
   /** Forget a group the user left. */
   removeGroup(gid: number): void {
     if (!this.groups.delete(gid)) return;
@@ -790,6 +808,10 @@ export class ConvoClient {
     socket.on("type_notice_remove", (data: any) => {
       const uid = toInt(data?.uid);
       if (uid) this.fire("typing", uid, false);
+    });
+    // Sent after do_archive, maybe from convo.php in another tab
+    socket.on("archive_success", (party: unknown) => {
+      if (toInt(party) > 0) this.forgetConversation(toInt(party));
     });
     socket.on("convo_error", (data: any) => {
       this.fire("error", String(data?.error || "Convo failed."));

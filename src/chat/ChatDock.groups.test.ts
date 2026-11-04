@@ -147,7 +147,7 @@ describe("ChatDock group chats", () => {
 
   const bubbleOrder = () =>
     Array.from(
-      document.querySelectorAll<HTMLElement>(".hfx-chat-heads > .hfx-chat-head")
+      document.querySelectorAll<HTMLElement>(".hfx-chat-heads .hfx-chat-head")
     ).map((h) =>
       h.classList.contains("hfx-chat-groups-toggle")
         ? "groups"

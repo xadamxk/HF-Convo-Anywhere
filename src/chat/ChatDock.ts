@@ -277,6 +277,8 @@ export class ChatDock {
   private readonly groupWindows = new Map<number, GroupChatWindow>();
   /** Groups on the cached list (or added to it); others found in messages get added. */
   private readonly listedGroups = new Set<number>();
+  /** DMs being archived right now, so a second click waits for the first. */
+  private readonly archiving = new Set<number>();
 
   constructor(private readonly options: ChatDockOptions) {
     this.client = options.client;
@@ -730,7 +732,57 @@ export class ChatDock {
     head.addEventListener("click", () =>
       this.openChat(conversation.partyId, { focus: true })
     );
-    return head;
+    // The archive button can't go inside the bubble (a button in a button)
+    return el("div", { class: "hfx-chat-head-wrap" }, [
+      head,
+      this.archiveButton(conversation),
+    ]);
+  }
+
+  /** The × shown on a DM's bubble or row while hovered or focused: archives it on HF. */
+  private archiveButton(conversation: Conversation): HTMLElement {
+    const { partyId, other } = conversation;
+    const label = `Archive conversation with ${other.username}`;
+    const button = el(
+      "button",
+      {
+        type: "button",
+        class: "hfx-chat-archive",
+        title: `${label} (it comes back when a new message arrives)`,
+        "aria-label": label,
+        "data-archive": partyId,
+        disabled: this.archiving.has(partyId),
+      },
+      "×"
+    );
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      this.archiveChat(partyId);
+    });
+    return button;
+  }
+
+  /**
+   * Archive a DM on HF, as convo.php's Archive Convo button does (HF has no
+   * delete), and close its window. It's off the bubbles or list until a new
+   * message brings it back.
+   */
+  private async archiveChat(partyId: number): Promise<void> {
+    if (this.archiving.has(partyId)) return;
+    this.archiving.add(partyId);
+    this.renderHeads();
+    try {
+      await this.client.archive(partyId);
+      this.closeChat(partyId);
+    } catch (error: any) {
+      const message = `Couldn't archive the conversation: ${String(error?.message || "Convo request failed.")}`;
+      const win = this.windows.get(partyId);
+      if (win) this.showNotice(win, message);
+      else window.alert(message);
+    } finally {
+      this.archiving.delete(partyId);
+      this.renderHeads();
+    }
   }
 
   /** A group's bubble: a rounded square with the group icon, no status dot. */
@@ -962,7 +1014,10 @@ export class ChatDock {
     row.addEventListener("click", () =>
       this.openChat(conversation.partyId, { focus: true })
     );
-    return el("li", null, row);
+    return el("li", { class: "hfx-chat-row-item" }, [
+      row,
+      this.archiveButton(conversation),
+    ]);
   }
 
   private groupRow(group: GroupChat, now: number): HTMLElement {
