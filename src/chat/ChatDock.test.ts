@@ -3,7 +3,7 @@ import { FakeConvoSocket } from "../test-utils/FakeConvoSocket";
 import { ChatDock, DEFAULT_DOCK_STATE, OpenChat, shortTime } from "./ChatDock";
 import { GlobalChatWindow } from "./GlobalChatWindow";
 import { GlobalRoomClient } from "./GlobalRoomClient";
-import type { SocketIOClient } from "./SocketIOClient";
+import type { ConvoSocket } from "./SocketIOClient";
 import type { ChatMessage, Conversation, ConvoClient } from "./ConvoClient";
 import { SendError } from "./ConvoClient";
 import type { ThemeId } from "./themes";
@@ -123,7 +123,7 @@ const mount = async (
             createClient: () =>
               new GlobalRoomClient({
                 postKey: "abc",
-                createSocket: () => socket as unknown as SocketIOClient,
+                createSocket: () => socket as unknown as ConvoSocket,
               }),
           });
         }

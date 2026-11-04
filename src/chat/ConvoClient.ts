@@ -6,7 +6,11 @@ import {
   RESULT_EVENTS,
 } from "./commandResults";
 import { LinkPreviews, parseEmbed, parsePreviews } from "./formatMessage";
-import { SocketIOClient } from "./SocketIOClient";
+import {
+  ConvoSocket,
+  CreateConvoSocket,
+  SocketIOClient,
+} from "./SocketIOClient";
 
 /**
  * Data layer for Convo chat bubbles: talks to HF's Convo websocket (the same
@@ -129,9 +133,7 @@ type Listener<K extends keyof ConvoClientEvents> = ConvoClientEvents[K];
 export interface ConvoClientOptions {
   postKey: string;
   origin?: string;
-  createSocket?: (
-    auth: () => Promise<Record<string, unknown>>
-  ) => SocketIOClient;
+  createSocket?: CreateConvoSocket;
   fetch?: typeof fetch;
   randomUUID?: () => string;
 }
@@ -161,7 +163,7 @@ export const wasNotDelivered = (error: unknown): boolean =>
  * with a SendError that says whether it may have gone through.
  */
 export async function sendWithAck(
-  socket: SocketIOClient,
+  socket: ConvoSocket,
   event: string,
   data: unknown,
   unconfirmed: string
@@ -197,7 +199,7 @@ const REPLY_GRACE_MS = 2000;
  * (`request.reply`) if it has one. The answer comes just before the ack.
  */
 export async function sendCommand(
-  socket: SocketIOClient,
+  socket: ConvoSocket,
   request: CommandRequest
 ): Promise<unknown> {
   const reply = request.reply;
@@ -247,7 +249,7 @@ export interface CommandClient {
  * (`mutation`) waits its turn like a message and gets a requestId.
  */
 export async function guardedCommand(
-  socket: SocketIOClient,
+  socket: ConvoSocket,
   request: CommandRequest,
   client: CommandClient
 ): Promise<unknown> {
@@ -386,7 +388,7 @@ export class ConvoClient {
   private readonly seen = new Set<string>();
   private readonly results = new CommandResults();
   private readonly listeners = new Map<string, Set<(...args: any[]) => void>>();
-  private readonly socket: SocketIOClient;
+  private readonly socket: ConvoSocket;
   private readonly fetchFn: typeof fetch;
   private readonly origin: string;
   private readonly randomUUID: () => string;

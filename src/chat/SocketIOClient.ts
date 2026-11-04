@@ -94,6 +94,37 @@ export interface SocketIOClientOptions {
 
 type Handler = (...args: any[]) => void;
 
+/**
+ * What the Convo clients use of a socket. SocketIOClient is one; a transport
+ * shared across tabs can be another.
+ */
+export interface ConvoSocket {
+  /** True once the Socket.IO connect has been accepted. */
+  readonly connected: boolean;
+  on(event: string, handler: Handler): this;
+  off(event: string, handler: Handler): this;
+  connect(): void;
+  /** Close the connection and stop reconnecting. */
+  disconnect(): void;
+  /** Send an event without waiting for a reply. False (dropped) when not connected. */
+  emit(event: string, ...args: unknown[]): boolean;
+  /**
+   * Send an event and resolve with the server's ack. Rejects with
+   * "Not connected." when not connected, on timeout, or if the connection
+   * drops first.
+   */
+  emitWithAck<T = any>(
+    event: string,
+    data: unknown,
+    timeoutMs?: number
+  ): Promise<T>;
+}
+
+/** Builds a client's socket; `auth` is called before every connection attempt. */
+export type CreateConvoSocket = (
+  auth: () => Promise<Record<string, unknown>>
+) => ConvoSocket;
+
 export interface DecodedPacket {
   type: string;
   ackId?: number;
@@ -126,7 +157,7 @@ export function decodeSocketPacket(payload: string): DecodedPacket | null {
   return packet;
 }
 
-export class SocketIOClient {
+export class SocketIOClient implements ConvoSocket {
   /** True once the Socket.IO connect has been accepted. */
   connected = false;
 

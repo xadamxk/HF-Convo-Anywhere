@@ -20,7 +20,11 @@ import {
   RESULT_EVENTS,
 } from "./commandResults";
 import { LinkPreviews, parseEmbed, parsePreviews } from "./formatMessage";
-import { SocketIOClient } from "./SocketIOClient";
+import {
+  ConvoSocket,
+  CreateConvoSocket,
+  SocketIOClient,
+} from "./SocketIOClient";
 
 /**
  * Client for Convo's global (public) room, on its own socket so that joining
@@ -145,9 +149,7 @@ export interface GlobalRoomEvents {
 export interface GlobalRoomClientOptions {
   postKey: string;
   origin?: string;
-  createSocket?: (
-    auth: () => Promise<Record<string, unknown>>
-  ) => SocketIOClient;
+  createSocket?: CreateConvoSocket;
   fetch?: typeof fetch;
   randomUUID?: () => string;
   /** Drop Helpbot's (Stanley's) automated notices. */
@@ -175,7 +177,7 @@ export class GlobalRoomClient {
   private readonly seen = new Set<string>();
   private readonly results = new CommandResults();
   private readonly listeners = new Map<string, Set<(...args: any[]) => void>>();
-  private readonly socket: SocketIOClient;
+  private readonly socket: ConvoSocket;
   private readonly randomUUID: () => string;
   private readonly hideHelpbot: boolean;
   private bootId: string | null = null;

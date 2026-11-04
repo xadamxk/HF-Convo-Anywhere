@@ -8,7 +8,7 @@ import {
 } from "./ChatDock";
 import { ConvoClient } from "./ConvoClient";
 import type { GroupInfo } from "./groupList";
-import type { SocketIOClient } from "./SocketIOClient";
+import type { ConvoSocket } from "./SocketIOClient";
 
 const ME = { uid: 10, username: "Me", avatar: "" };
 const NOVA = { uid: 20, username: "Nova", avatar: "" };
@@ -73,7 +73,7 @@ describe("ChatDock group chats", () => {
       postKey: "abc",
       origin: "https://hackforums.net",
       randomUUID: () => "req-1",
-      createSocket: () => socket as unknown as SocketIOClient,
+      createSocket: () => socket as unknown as ConvoSocket,
     });
   };
 

@@ -2,7 +2,7 @@ import { FakeConvoSocket } from "../test-utils/FakeConvoSocket";
 import { transferEvent } from "../test-utils/transferEvent";
 import { ConvoClient } from "./ConvoClient";
 import { GroupChatWindow } from "./GroupChatWindow";
-import type { SocketIOClient } from "./SocketIOClient";
+import type { ConvoSocket } from "./SocketIOClient";
 
 const ME = { uid: 10, username: "Me", avatar: "" };
 const NOVA = { uid: 20, username: "Nova", avatar: "", group: 46 };
@@ -64,7 +64,7 @@ describe("GroupChatWindow", () => {
       postKey: "abc",
       origin: "https://hackforums.net",
       randomUUID: () => "req-1",
-      createSocket: () => socket as unknown as SocketIOClient,
+      createSocket: () => socket as unknown as ConvoSocket,
     });
     client.connect();
     socket.fire("convo_ready", { user: ME, bootId: "b" });

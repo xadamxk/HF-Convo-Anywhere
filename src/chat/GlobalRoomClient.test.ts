@@ -1,6 +1,6 @@
 import { commandRequest } from "./commands";
 import { GlobalRoomClient, parseRoomMessage, rankOf } from "./GlobalRoomClient";
-import type { SocketIOClient } from "./SocketIOClient";
+import type { ConvoSocket } from "./SocketIOClient";
 
 const ME = { uid: 10, username: "Me", avatar: "", usergroup: 2, group: 2 };
 const NOVA = {
@@ -129,7 +129,7 @@ describe("GlobalRoomClient", () => {
       postKey: "abc",
       origin: "https://hackforums.net",
       randomUUID: () => `req-${++uuid}`,
-      createSocket: () => socket as unknown as SocketIOClient,
+      createSocket: () => socket as unknown as ConvoSocket,
     });
   });
 
@@ -225,7 +225,7 @@ describe("GlobalRoomClient", () => {
     client = new GlobalRoomClient({
       postKey: "abc",
       origin: "https://hackforums.net",
-      createSocket: () => socket as unknown as SocketIOClient,
+      createSocket: () => socket as unknown as ConvoSocket,
       hideHelpbot: true,
     });
     const onMessages = jest.fn();
@@ -242,7 +242,7 @@ describe("GlobalRoomClient", () => {
     client = new GlobalRoomClient({
       postKey: "abc",
       origin: "https://hackforums.net",
-      createSocket: () => socket as unknown as SocketIOClient,
+      createSocket: () => socket as unknown as ConvoSocket,
       hideHelpbot: true,
     });
     await ready();
