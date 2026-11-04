@@ -8,7 +8,7 @@ Features:
 + Chat dock on every HF page (hidden on convo.php, where Convo is already open)
 + Direct messages, group chats (Comrades) and the global chat
 + Bubbles or a Messenger-style list, on the left or right side of the page
-+ 15 color themes, from Gray, HF Purple and HFX Blue to High Contrast, Synthwave, Ocean and Sakura
++ 15 color themes, with a variety of dark, light and colorful options
 + Online, away and offline status, unread badges and typing indicators
 + A "New messages" line and jump button, so you never lose your place
 + Convo commands with a picker (/flip, /jackpot, /stats, /price and more)
