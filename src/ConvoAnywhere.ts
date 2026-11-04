@@ -66,15 +66,18 @@ export class ConvoAnywhere {
     // One DM socket and one global room socket for all HF tabs (#3); each
     // falls back to one per tab. Only tabs with the global window open want
     // the room's, so the user leaves the room when the last one closes it.
+    // The extension's version is in the names: after an update, tabs still
+    // running the old version (until they reload) don't share with new ones.
     const uid = getCurrentUser()?.uid;
     const share = settings.sharedConnection !== false && Boolean(uid);
     const socketUrl = convoSocketUrl(location.origin);
+    const version = chrome.runtime?.getManifest?.()?.version ?? "dev";
     const createSocket = share
-      ? sharedSocketFactory(`hfca-socket:convo:${uid}`, socketUrl)
+      ? sharedSocketFactory(`hfca-socket:${version}:convo:${uid}`, socketUrl)
       : undefined;
     const createGlobalSocket = share
       ? sharedSocketFactory(
-          `hfca-socket:global:${uid}`,
+          `hfca-socket:${version}:global:${uid}`,
           socketUrl,
           () => new RoomReplay()
         )
@@ -151,6 +154,29 @@ export class ConvoAnywhere {
     window.addEventListener("pageshow", (event) => {
       if (event.persisted) dock.resume();
     });
+    this.watchForOrphaning(() => {
+      // Its settings and chat state can't be saved any more, and it would
+      // keep holding the shared sockets from the extension's new tabs
+      dock.suspend();
+      dock.destroy();
+      Logger.warn(
+        "Convo Anywhere was updated or reloaded; reload this page to use the new version."
+      );
+    });
+  }
+
+  /**
+   * Call `onOrphaned` once the extension is reloaded, updated or removed:
+   * this page's script keeps running, but cut off from the extension.
+   */
+  private watchForOrphaning(onOrphaned: () => void): void {
+    // Not running as an extension (tests): nothing to watch
+    if (!chrome.runtime?.id) return;
+    const timer = setInterval(() => {
+      if (chrome.runtime?.id) return;
+      clearInterval(timer);
+      onOrphaned();
+    }, 5000);
   }
 
   /**

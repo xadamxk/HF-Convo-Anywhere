@@ -7,7 +7,10 @@ import {
 import {
   ChannelLike,
   LeaderInfo,
+  LeaderTiming,
   LockManagerLike,
+  pageActivity,
+  TabActivity,
   TabLeader,
   TabMessage,
 } from "./tabLeader";
@@ -79,6 +82,9 @@ export interface SharedSocketOptions {
   createSocket: () => RelaySocket;
   /** What to replay to tabs that join late, beyond convo_ready. */
   replay?: ReplayCache;
+  /** Whether the user is looking at this tab, so the socket can follow them. */
+  activity?: TabActivity | null;
+  timing?: Partial<LeaderTiming>;
   tabId?: string;
   now?: () => number;
 }
@@ -100,6 +106,9 @@ export class SharedSocket implements ConvoSocket {
   /** The leader this follower last synced with (`tabId:epoch`). */
   private following: string | null = null;
   private nextId = 0;
+  /** Acked emits the leader is running, and who's waiting for them all to finish. */
+  private inFlight = 0;
+  private idleWaiters: (() => void)[] = [];
 
   constructor(options: SharedSocketOptions) {
     this.createSocket = options.createSocket;
@@ -108,6 +117,9 @@ export class SharedSocket implements ConvoSocket {
       name: options.name,
       locks: options.locks,
       createChannel: options.createChannel,
+      activity: options.activity,
+      timing: options.timing,
+      whenIdle: () => this.whenIdle(),
       tabId: options.tabId,
       now: options.now,
     });
@@ -166,7 +178,8 @@ export class SharedSocket implements ConvoSocket {
     data: unknown,
     timeoutMs = DEFAULT_ACK_TIMEOUT
   ): Promise<T> {
-    if (this.leader.isLeader) return this.leaderAck(event, data, timeoutMs);
+    if (this.leader.isLeader)
+      return this.track(this.leaderAck(event, data, timeoutMs));
     const to = this.leader.leader?.tabId;
     if (!this.told || !to) return Promise.reject(new Error("Not connected."));
     const id = this.nextId++;
@@ -293,6 +306,26 @@ export class SharedSocket implements ConvoSocket {
     return result;
   }
 
+  /** Count an acked emit as in flight until it settles. */
+  private track<T>(promise: Promise<T>): Promise<T> {
+    this.inFlight++;
+    const done = () => {
+      this.inFlight--;
+      if (this.inFlight > 0) return;
+      const waiters = this.idleWaiters;
+      this.idleWaiters = [];
+      waiters.forEach((resolve) => resolve());
+    };
+    promise.then(done, done);
+    return promise;
+  }
+
+  /** Resolves when no acked emit is in flight (a pending send, say). */
+  private whenIdle(): Promise<void> {
+    if (!this.inFlight) return Promise.resolve();
+    return new Promise((resolve) => this.idleWaiters.push(resolve));
+  }
+
   /** Fire the replay cache's events in a tab that joined late: another (`to`), or this one. */
   private sendReplay(to?: string): void {
     const events = this.cache?.replay() ?? [];
@@ -319,7 +352,8 @@ export class SharedSocket implements ConvoSocket {
     if (message.kind !== "ack" || typeof id !== "number") return;
     const respond = (reply: Record<string, unknown>) =>
       this.leader.post({ type: RESPONSE, to: from, id, ...reply });
-    if (!this.leader.isLeader) {
+    // Mid-handover, new work is refused: it certainly didn't go through
+    if (!this.leader.isLeader || this.leader.handingOff) {
       respond({ error: { message: "Not connected.", forwarded: false } });
       return;
     }
@@ -327,7 +361,7 @@ export class SharedSocket implements ConvoSocket {
       typeof message.timeout === "number"
         ? message.timeout
         : DEFAULT_ACK_TIMEOUT;
-    this.leaderAck(message.name, message.data, timeout, from).then(
+    this.track(this.leaderAck(message.name, message.data, timeout, from)).then(
       (result) => respond({ result }),
       (error) => {
         const text = String(error?.message || "Convo request failed.");
@@ -508,5 +542,6 @@ export function sharedSocketFactory(
         new BroadcastChannel(channel) as unknown as ChannelLike,
       createSocket: () => new SocketIOClient({ url, auth }),
       replay: createReplay?.(),
+      activity: pageActivity,
     });
 }

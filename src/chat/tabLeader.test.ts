@@ -1,3 +1,4 @@
+import { FakeActivity } from "../test-utils/FakeActivity";
 import { FakeBroadcastBus } from "../test-utils/FakeBroadcastBus";
 import { FakeLocks } from "../test-utils/FakeLocks";
 import { LeaderInfo, LeaderRole, TabLeader, TabMessage } from "./tabLeader";
@@ -52,7 +53,7 @@ describe("TabLeader", () => {
     expect(a.roles).toEqual(["follower", "leader"]);
     expect(a.leader.leader).toEqual({ tabId: "a", epoch: 1000 });
     expect(bus.ofType(NAME, "leader")).toEqual([
-      { type: "leader", v: 1, from: "a", epoch: 1000 },
+      { type: "leader", visible: true, v: 1, from: "a", epoch: 1000 },
     ]);
   });
 
@@ -247,6 +248,193 @@ describe("TabLeader", () => {
     expect(leadersOf(a, b)).toEqual(["b"]);
     expect(a.leader.leader?.tabId).toBe("b");
     expect(locks.waiting(NAME)).toBe(1);
+  });
+
+  describe("following the user", () => {
+    const joined: TabLeader[] = [];
+    beforeEach(() => {
+      jest.useFakeTimers({
+        doNotFake: ["queueMicrotask", "setImmediate", "nextTick"],
+      });
+    });
+    afterEach(() => {
+      joined.splice(0).forEach((leader) => leader.leave());
+      jest.useRealTimers();
+    });
+
+    const activeTab = (
+      tabId: string,
+      activity: FakeActivity,
+      whenIdle?: () => Promise<void>
+    ) => {
+      const leader = new TabLeader({
+        name: NAME,
+        locks,
+        createChannel: bus.create,
+        tabId,
+        activity,
+        whenIdle,
+        random: () => 0,
+      });
+      joined.push(leader);
+      return leader;
+    };
+
+    /** a leads while hidden; b follows, hidden. */
+    const hiddenLeader = async (whenIdle?: () => Promise<void>) => {
+      const aActivity = new FakeActivity(false);
+      const bActivity = new FakeActivity(false);
+      const a = activeTab("a", aActivity, whenIdle);
+      a.join();
+      await flush();
+      const b = activeTab("b", bActivity);
+      b.join();
+      await flush();
+      return { a, b, aActivity, bActivity };
+    };
+
+    /** Move time on a second at a time, delivering messages as it goes. */
+    const advance = async (ms: number) => {
+      for (let left = ms; left > 0; left -= 1000) {
+        jest.advanceTimersByTime(Math.min(1000, left));
+        await flush();
+      }
+    };
+
+    it("hands the lead to the tab the user looks at, once they've stayed", async () => {
+      const { a, b, bActivity } = await hiddenLeader();
+      bActivity.set(true);
+      await advance(1000);
+      expect(b.isLeader).toBe(false);
+
+      await advance(600);
+      expect(bus.ofType(NAME, "handoff-request")).toHaveLength(1);
+      expect(b.isLeader).toBe(true);
+      expect(a.role).toBe("follower");
+      expect(a.leader?.tabId).toBe("b");
+    });
+
+    it("ignores a quick look at another tab", async () => {
+      const { b, bActivity } = await hiddenLeader();
+      bActivity.set(true);
+      await advance(800);
+      bActivity.set(false);
+      await advance(5000);
+
+      expect(b.isLeader).toBe(false);
+      expect(bus.ofType(NAME, "handoff-request")).toHaveLength(0);
+    });
+
+    it("keeps the lead in a visible tab", async () => {
+      const { a, b, aActivity, bActivity } = await hiddenLeader();
+      aActivity.set(true, false); // visible, e.g. a window beside this one
+      await flush();
+      bActivity.set(true);
+      await advance(10000);
+
+      expect(a.isLeader).toBe(true);
+      expect(b.isLeader).toBe(false);
+    });
+
+    it("asks as soon as the leader is hidden if the user is already here", async () => {
+      const aActivity = new FakeActivity(true);
+      const a = activeTab("a", aActivity);
+      a.join();
+      await flush();
+      const bActivity = new FakeActivity(true);
+      const b = activeTab("b", bActivity);
+      b.join();
+      await advance(2000);
+      expect(a.isLeader).toBe(true);
+
+      aActivity.set(false);
+      await flush();
+      expect(b.isLeader).toBe(true);
+    });
+
+    it("finishes the leader's work in flight before handing over", async () => {
+      let finish!: () => void;
+      const idle = new Promise<void>((resolve) => (finish = resolve));
+      const { a, b, bActivity } = await hiddenLeader(() => idle);
+      bActivity.set(true);
+      await advance(1600);
+
+      expect(a.isLeader).toBe(true);
+      expect(a.handingOff).toBe(true);
+      finish();
+      await flush();
+      expect(b.isLeader).toBe(true);
+      expect(a.handingOff).toBe(false);
+    });
+
+    it("hands over anyway when the work takes too long", async () => {
+      const { b, bActivity } = await hiddenLeader(() => new Promise(() => {}));
+      bActivity.set(true);
+      await advance(1600);
+      expect(b.isLeader).toBe(false);
+      await advance(5000);
+      expect(b.isLeader).toBe(true);
+    });
+
+    it("takes the lead when a hidden leader doesn't answer", async () => {
+      const { a, b, bActivity } = await hiddenLeader();
+      // a stops answering (frozen), but holds the lock
+      (a as any).onHandoffRequest = () => undefined;
+      bActivity.set(true);
+      await advance(1600);
+      expect(b.isLeader).toBe(false);
+
+      await advance(6000);
+      expect(b.isLeader).toBe(true);
+    });
+
+    it("lets the active tab take over when the leader's page goes, not the next in line", async () => {
+      const a = activeTab("a", new FakeActivity(false));
+      const b = activeTab("b", new FakeActivity(false));
+      const c = activeTab("c", new FakeActivity(true));
+      [a, b, c].forEach((t) => t.join());
+      await flush();
+      // c is visible and focused, but a hasn't been hidden... until it goes
+      a.leave();
+      await flush();
+
+      expect(c.isLeader).toBe(true);
+      expect(b.isLeader).toBe(false);
+    });
+
+    it("takes over from a leader that went quiet: soon when visible, much later when hidden", async () => {
+      const { a, b, bActivity } = await hiddenLeader();
+      // a is frozen: no more heartbeats, lock still held
+      const frozen = a as any;
+      clearInterval(frozen.heartbeatTimer);
+      frozen.post = () => undefined;
+
+      await advance(60000);
+      expect(b.isLeader).toBe(false); // hidden: browsers slow its timers too
+
+      bActivity.set(true, false); // visible, not focused: no handover asked
+      await advance(4000);
+      expect(b.isLeader).toBe(true);
+    });
+
+    it("waits five minutes before a hidden tab takes over a quiet leader", async () => {
+      const { a, b } = await hiddenLeader();
+      const frozen = a as any;
+      clearInterval(frozen.heartbeatTimer);
+      frozen.post = () => undefined;
+
+      await advance(4 * 60000);
+      expect(b.isLeader).toBe(false);
+      await advance(62000);
+      expect(b.isLeader).toBe(true);
+    });
+
+    it("hears a busy hidden leader's heartbeat and leaves it be", async () => {
+      const { a, b } = await hiddenLeader();
+      await advance(10 * 60000);
+      expect(a.isLeader).toBe(true);
+      expect(b.isLeader).toBe(false);
+    });
   });
 
   it("doesn't post after leaving", async () => {

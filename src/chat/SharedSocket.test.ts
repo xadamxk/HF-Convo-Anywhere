@@ -1,3 +1,4 @@
+import { FakeActivity } from "../test-utils/FakeActivity";
 import { FakeBroadcastBus } from "../test-utils/FakeBroadcastBus";
 import { FakeLocks } from "../test-utils/FakeLocks";
 import { FakeRelaySocket } from "../test-utils/FakeRelaySocket";
@@ -444,6 +445,70 @@ describe("SharedSocket", () => {
         "convo_receivemessage_bulk",
         [{ mid: 1 }],
       ]);
+    });
+  });
+
+  describe("handing over to the active tab", () => {
+    beforeEach(() => {
+      jest.useFakeTimers({
+        doNotFake: ["queueMicrotask", "setImmediate", "nextTick"],
+      });
+    });
+    afterEach(() => jest.useRealTimers());
+
+    const advance = async (ms: number) => {
+      for (let left = ms; left > 0; left -= 500) {
+        jest.advanceTimersByTime(Math.min(500, left));
+        await flush();
+      }
+    };
+
+    it("finishes a follower's send first, refusing new work meanwhile", async () => {
+      const make = (tabId: string, activity: FakeActivity) =>
+        new SharedSocket({
+          name: NAME,
+          locks,
+          createChannel: bus.create,
+          tabId,
+          activity,
+          createSocket: () => {
+            const socket = new FakeRelaySocket();
+            sockets.push(socket);
+            return socket;
+          },
+        });
+      const a = make("a", new FakeActivity(false));
+      const b = make("b", new FakeActivity(false));
+      const cActivity = new FakeActivity(false);
+      const c = make("c", cActivity);
+      [a, b, c].forEach((t) => t.connect());
+      await flush();
+      sockets[0].open();
+      await flush();
+
+      // b's send is still waiting for the server's ack
+      let ack!: (value: unknown) => void;
+      sockets[0].ackReplies.convo_newmessage = () =>
+        new Promise((resolve) => (ack = resolve));
+      const send = b.emitWithAck("convo_newmessage", { message: "hi" });
+      await flush();
+
+      // The user switches to c
+      cActivity.set(true);
+      await advance(2000);
+      expect(a.leader.handingOff).toBe(true);
+      expect(c.leader.isLeader).toBe(false);
+      await expect(b.emitWithAck("mark_read", 1)).rejects.toThrow(
+        "Not connected."
+      );
+
+      ack({ ok: true });
+      await expect(send).resolves.toEqual({ ok: true });
+      await advance(500);
+      expect(c.leader.isLeader).toBe(true);
+      expect(sockets[0].connected).toBe(false);
+      expect(sockets).toHaveLength(2);
+      [a, b, c].forEach((t) => t.disconnect());
     });
   });
 

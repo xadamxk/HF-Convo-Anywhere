@@ -48,6 +48,43 @@ describe("ConvoAnywhere group list", () => {
   });
 });
 
+describe("ConvoAnywhere orphan watch", () => {
+  const runtime = chrome.runtime as { id?: string };
+  const watch = (onOrphaned: () => void) =>
+    (
+      new ConvoAnywhere() as unknown as {
+        watchForOrphaning(onOrphaned: () => void): void;
+      }
+    ).watchForOrphaning(onOrphaned);
+
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => {
+    delete runtime.id;
+    jest.useRealTimers();
+  });
+
+  it("notices once the extension is reloaded or updated, and only once", () => {
+    runtime.id = "ext";
+    const onOrphaned = jest.fn();
+    watch(onOrphaned);
+    jest.advanceTimersByTime(20000);
+    expect(onOrphaned).not.toHaveBeenCalled();
+
+    delete runtime.id;
+    jest.advanceTimersByTime(5000);
+    jest.advanceTimersByTime(20000);
+    expect(onOrphaned).toHaveBeenCalledTimes(1);
+  });
+
+  it("doesn't watch outside an extension", () => {
+    const onOrphaned = jest.fn();
+    watch(onOrphaned);
+    jest.advanceTimersByTime(20000);
+    expect(onOrphaned).not.toHaveBeenCalled();
+    expect(jest.getTimerCount()).toBe(0);
+  });
+});
+
 describe("ConvoAnywhere.start", () => {
   afterEach(() => {
     document.head.innerHTML = "";
