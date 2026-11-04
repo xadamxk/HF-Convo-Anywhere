@@ -16,6 +16,15 @@ import {
 } from "./ConvoClient";
 import { CommandPicker } from "./commandPicker";
 import { commandsFor, parseCommand, runCommand, showReply } from "./commands";
+import {
+  createReplyQuote,
+  findReplyTarget,
+  jumpToLine,
+  ReplyBar,
+  replyRequestId,
+  ReplyTo,
+  withoutLeadingMention,
+} from "./replies";
 import { hiddenBySettings, readConvoStorage } from "./convoStorage";
 import { showCommandResult } from "./commandResults";
 import { avatarUrl, mentionsUser, previewText } from "./formatMessage";
@@ -173,6 +182,8 @@ export interface ChatDockOptions {
 interface PendingSend {
   text: string;
   requestId: string;
+  /** The quoted reply it was sent as, kept for a retry. */
+  replyTo?: ReplyTo;
   failed?: string;
   /** An image upload's bytes, kept so it can be retried. */
   image?: ArrayBuffer;
@@ -194,6 +205,8 @@ interface ChatWindow {
   pendingBox: HTMLElement;
   typing: HTMLElement;
   input: HTMLTextAreaElement;
+  /** "Replying to …" while a quoted reply is pending (see replies.ts). */
+  replyBar: ReplyBar;
   /** Message lines by mid. */
   rendered: Map<number, HTMLElement>;
   /** The "New messages" line and jump button. */
@@ -1400,13 +1413,14 @@ export class ChatDock {
       input
     );
     const emoji = new EmojiPicker(input, compose);
+    const replyBar = new ReplyBar();
     const root = el(
       "section",
       {
         class: `hfx-chat-window hfx-gc-window${minimized ? " hfx-chat-minimized" : ""}`,
         "data-party": partyId,
       },
-      [header, list, notice, typing, compose]
+      [header, list, notice, typing, replyBar.root, compose]
     );
 
     const win: ChatWindow = {
@@ -1424,6 +1438,7 @@ export class ChatDock {
       pendingBox,
       typing,
       input,
+      replyBar,
       rendered: new Map(),
       unread: new UnreadMarker(list),
       emoji,
@@ -1639,17 +1654,45 @@ export class ChatDock {
         ? {
             username: sender.username,
             onClick: () => {
+              win.replyBar.set({
+                mid: message.mid,
+                uid: message.uid,
+                author: sender,
+              });
               appendMention(win.input, sender.username);
               this.autoGrow(win.input);
             },
           }
         : undefined;
+    // A reply (see replies.ts): quote what it replies to, if that's loaded
+    const target = message.html
+      ? undefined
+      : findReplyTarget(message, this.client.getMessages(win.partyId));
+    let shown: ChatMessage = message;
+    let quote: HTMLElement | undefined;
+    if (target) {
+      const author =
+        this.client.users.get(target.uid) ??
+        (target.uid === this.client.me?.uid ? this.client.me : undefined);
+      quote = createReplyQuote(target, author, this.origin, () =>
+        jumpToLine(win.rendered.get(target.mid))
+      );
+      shown = {
+        ...message,
+        text: withoutLeadingMention(
+          message.text,
+          { uid: target.uid, username: author?.username },
+          this.origin
+        ),
+      };
+    }
     const line = createMessageLine(
-      message,
+      shown,
       this.origin,
       { "data-mid": message.mid },
       false,
-      reply
+      reply,
+      quote
     );
     win.rendered.set(message.mid, line);
     const group = win.lastGroup;
@@ -1683,7 +1726,7 @@ export class ChatDock {
         if (!this.canSend(win, pending.image ? "image" : "message")) return;
         win.pending = win.pending.filter((p) => p !== pending);
         if (pending.image) this.sendImage(win, pending.image);
-        else this.send(win, pending.text);
+        else this.send(win, pending.text, pending.replyTo);
       });
       const discard = el("button", { type: "button" }, "Discard");
       discard.addEventListener("click", () => {
@@ -1702,29 +1745,41 @@ export class ChatDock {
     win.pendingBox.replaceChildren(...nodes);
   }
 
-  private async send(win: ChatWindow, retryText?: string): Promise<void> {
+  private async send(
+    win: ChatWindow,
+    retryText?: string,
+    retryReplyTo?: ReplyTo
+  ): Promise<void> {
     const text = (retryText ?? win.input.value).trim();
     if (!text) return;
     if (retryText === undefined && (await this.runCommand(win, text))) return;
     if (!this.canSend(win, "message")) return;
     win.unread.clear();
+    let replyTo = retryReplyTo;
     if (retryText === undefined) {
       win.input.value = "";
       this.autoGrow(win.input);
+      replyTo = win.replyBar.current ?? undefined;
+      win.replyBar.clear();
     }
     this.stopOwnTyping(win);
 
     const pending: PendingSend = {
       text,
-      requestId: this.client.createRequestId(),
+      replyTo,
+      requestId: replyTo
+        ? replyRequestId(replyTo.mid)
+        : this.client.createRequestId(),
     };
     await this.deliver(
       win,
       pending,
       () => this.client.send(win.partyId, text, pending.requestId),
-      // Never reached the server: put the text back
+      // Never reached the server: put the text (and the reply) back
       () => {
-        if (!win.input.value) win.input.value = text;
+        if (win.input.value) return;
+        win.input.value = text;
+        if (replyTo && !win.replyBar.current) win.replyBar.set(replyTo);
       }
     );
   }

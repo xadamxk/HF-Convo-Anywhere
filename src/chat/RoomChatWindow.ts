@@ -16,6 +16,14 @@ import {
 import { EmojiPicker } from "./emoji";
 import { appendMention, MentionPicker } from "./mentions";
 import {
+  createReplyQuote,
+  findReplyTarget,
+  jumpToLine,
+  ReplyBar,
+  replyRequestId,
+  withoutLeadingMention,
+} from "./replies";
+import {
   createMessageGroup,
   createMessageLine,
   joinsGroup,
@@ -116,6 +124,7 @@ export abstract class RoomChatWindow {
   private readonly commands: CommandPicker;
   private readonly unread: UnreadMarker;
   private readonly emoji: EmojiPicker;
+  private readonly replyBar = new ReplyBar();
   private readonly lines = new Map<string, HTMLElement>();
   private lastGroup: MessageGroup | null = null;
   private pending: { requestId: string; node: HTMLElement }[] = [];
@@ -230,6 +239,7 @@ export abstract class RoomChatWindow {
         el("div", { class: "hfx-gc-body" }, [this.list, this.panel]),
         this.notice,
         this.typing,
+        this.replyBar.root,
         compose,
       ]
     );
@@ -354,6 +364,8 @@ export abstract class RoomChatWindow {
       if (reset) {
         this.clearMessages();
         this.unread.clear();
+        // Message ids started over: the reply's target is gone
+        this.replyBar.clear();
       }
       this.addMessages(added);
     });
@@ -499,26 +511,59 @@ export abstract class RoomChatWindow {
 
   private renderLine(message: RoomMessage): HTMLElement {
     const me = this.source.me;
+    // A reply (see replies.ts): quote what it replies to, if that's loaded
+    const target = message.html
+      ? undefined
+      : findReplyTarget(
+          message,
+          this.source.messages,
+          // Stanley's id-less notices borrow message ids
+          (m) => !m.key.includes(":notice:")
+        );
     const mention =
       me &&
       message.uid !== me.uid &&
       !message.html &&
-      mentionsUser(message.text, me, this.origin);
+      (mentionsUser(message.text, me, this.origin) || target?.uid === me.uid);
     // Reply mentions the sender; not on your own messages or Stanley's
     const sender = this.source.users.get(message.uid);
     const reply =
       sender && message.uid !== me?.uid && message.uid !== HELPBOT_UID
         ? {
             username: sender.username,
-            onClick: () => this.insertMention(sender.username),
+            onClick: () => {
+              this.replyBar.set({
+                mid: message.mid,
+                uid: message.uid,
+                author: sender,
+              });
+              this.insertMention(sender.username);
+            },
           }
         : undefined;
+    let shown: RoomMessage = message;
+    let quote: HTMLElement | undefined;
+    if (target) {
+      const author = this.source.users.get(target.uid);
+      quote = createReplyQuote(target, author, this.origin, () =>
+        jumpToLine(this.lines.get(target.key))
+      );
+      shown = {
+        ...message,
+        text: withoutLeadingMention(
+          message.text,
+          { uid: target.uid, username: author?.username },
+          this.origin
+        ),
+      };
+    }
     return createMessageLine(
-      message,
+      shown,
       this.origin,
       { "data-key": message.key },
       !!mention,
-      reply
+      reply,
+      quote
     );
   }
 
@@ -651,14 +696,19 @@ export abstract class RoomChatWindow {
     this.input.style.height = "";
     this.stopOwnTyping();
     this.unread.clear();
+    const replyTo = this.replyBar.current;
+    this.replyBar.clear();
 
     await this.deliver(
       `Sending: ${text}`,
       (requestId) => this.source.send(text, requestId),
-      // Never reached the server: put the text back
+      // Never reached the server: put the text (and the reply) back
       () => {
-        if (!this.input.value) this.input.value = text;
-      }
+        if (this.input.value) return;
+        this.input.value = text;
+        if (replyTo && !this.replyBar.current) this.replyBar.set(replyTo);
+      },
+      replyTo ? replyRequestId(replyTo.mid) : undefined
     );
   }
 
@@ -700,9 +750,9 @@ export abstract class RoomChatWindow {
   private async deliver(
     label: string,
     run: (requestId: string) => Promise<unknown>,
-    undo?: () => void
+    undo?: () => void,
+    requestId = this.source.createRequestId()
   ): Promise<void> {
-    const requestId = this.source.createRequestId();
     const node = el("div", { class: "hfx-gc-pending" }, label);
     this.pending.push({ requestId, node });
     this.pendingBox.appendChild(node);

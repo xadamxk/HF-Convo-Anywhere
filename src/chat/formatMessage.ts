@@ -261,7 +261,7 @@ function previewLink(href: string, preview: LinkPreview): HTMLAnchorElement {
 }
 
 /** Split a matched URL from the sentence punctuation after it. */
-function trimUrl(match: string): { url: string; trailing: string } {
+export function trimUrl(match: string): { url: string; trailing: string } {
   const trailing = match.match(TRAILING_PUNCTUATION)?.[0] ?? "";
   return { url: match.slice(0, match.length - trailing.length), trailing };
 }

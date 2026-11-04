@@ -121,14 +121,16 @@ const replyIcon = () => {
 
 /**
  * One message's line; its full time shows on hover. With `reply`, a reply
- * button shows to its left on hover.
+ * button shows to its left on hover. `quote` (see replies.ts) goes above the
+ * text.
  */
 export function createMessageLine(
   message: RenderableMessage & { dateline: number; result?: CommandResult },
   origin: string,
   attrs: Record<string, string | number> = {},
   mention = false,
-  reply?: { username: string; onClick: () => void }
+  reply?: { username: string; onClick: () => void },
+  quote?: HTMLElement
 ): HTMLElement {
   const line = el(
     "div",
@@ -137,7 +139,7 @@ export function createMessageLine(
       title: convoNiceTime(message.dateline),
       ...attrs,
     },
-    renderMessage(message, origin)
+    [quote, renderMessage(message, origin)]
   );
   if (reply) {
     const button = el(

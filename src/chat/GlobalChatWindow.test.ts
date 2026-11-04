@@ -339,6 +339,96 @@ describe("GlobalChatWindow", () => {
     expect(document.activeElement).toBe(input());
   });
 
+  describe("quoted replies", () => {
+    const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+    it("sends a reply with its target in the requestId, and clears it after", async () => {
+      await open();
+      socket.fire("convo_receivemessage_bulk", [
+        room({ mid: 4100, message: "Hey" }),
+      ]);
+      win.root.querySelector<HTMLButtonElement>(".hfx-gc-reply")!.click();
+      const bar = win.root.querySelector<HTMLElement>(".hfx-chat-replying")!;
+      expect(bar.hidden).toBe(false);
+      expect(bar.textContent).toContain("Replying to Nova");
+      input().value += "yo";
+      input().dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+      await flush();
+      const [[, data]] = socket.acked.filter(
+        ([name]) => name === "convo_newmessage"
+      );
+      // Others (and convo.php) just see the mention
+      expect((data as any).message).toBe("@Nova@ yo");
+      expect((data as any).requestId).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4e9c-a7f1-000000001004$/
+      );
+      expect(bar.hidden).toBe(true);
+    });
+
+    it("can be cancelled", async () => {
+      await open();
+      socket.fire("convo_receivemessage_bulk", [room({ mid: 5 })]);
+      win.root.querySelector<HTMLButtonElement>(".hfx-gc-reply")!.click();
+      win.root
+        .querySelector<HTMLButtonElement>(".hfx-chat-replying-cancel")!
+        .click();
+      input().dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+      await flush();
+      const [[, data]] = socket.acked.filter(
+        ([name]) => name === "convo_newmessage"
+      );
+      expect((data as any).requestId).toBe("req-1");
+    });
+
+    it("shows a reply's quote, without the leading mention", async () => {
+      await open();
+      socket.fire("convo_receivemessage_bulk", [
+        room({ mid: 7, message: "Hey User B" }),
+        room({
+          mid: 8,
+          uid: ORBIT.uid,
+          message:
+            "https://hackforums.net/member.php?action=profile&uid=" +
+            `${NOVA.uid} My reply to Nova`,
+          requestId: "01234567-89ab-4e9c-a7f1-000000000007",
+        }),
+        room({
+          mid: 9,
+          uid: ORBIT.uid,
+          message: "to me",
+          requestId: "01234567-89ab-4e9c-a7f1-00000000000a",
+        }),
+      ]);
+      const lines = Array.from(
+        win.root.querySelectorAll<HTMLElement>(".hfx-gc-line")
+      );
+      const quote = lines[1].querySelector(".hfx-gc-quote")!;
+      expect(quote.textContent).toBe("@Nova:Hey User B");
+      expect(lines[1].textContent).toContain("My reply to Nova");
+      expect(lines[1].textContent).not.toContain("member.php");
+      // A target that isn't loaded: a plain message
+      expect(lines[2].querySelector(".hfx-gc-quote")).toBeNull();
+      expect(lines[2].textContent).toContain("to me");
+    });
+
+    it("highlights a reply to your message as a mention", async () => {
+      await open();
+      socket.fire("convo_receivemessage_bulk", [
+        room({ mid: 7, uid: ME.uid, message: "mine" }),
+        room({
+          mid: 8,
+          message: "nice",
+          requestId: "01234567-89ab-4e9c-a7f1-000000000007",
+        }),
+      ]);
+      const line = win.root.querySelector<HTMLElement>('[data-key="b:8"]')!;
+      expect(line.classList.contains("hfx-gc-mention")).toBe(true);
+      expect(line.querySelector(".hfx-gc-quote")?.textContent).toBe(
+        `@${ME.username}:mine`
+      );
+    });
+  });
+
   it("has an emoji button that types at the caret", async () => {
     await open();
     const button = win.root.querySelector<HTMLButtonElement>(

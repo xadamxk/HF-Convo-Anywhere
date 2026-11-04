@@ -454,6 +454,70 @@ ${DEFAULT_VARS}
   color: var(--hfx-chat-strong);
 }
 .hfx-gc-reply svg { display: block; width: 16px; height: 16px; }
+/* A quoted reply's quote, above its text (extension users only; see replies.ts) */
+.hfx-gc-quote {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 2px 0 1px;
+  padding: 1px 6px;
+  border: none;
+  border-left: 3px solid var(--hfx-chat-outline);
+  border-radius: 3px;
+  background: rgba(var(--hfx-chat-tint), 0.05);
+  color: var(--hfx-chat-muted);
+  font: 11px Verdana, Arial, sans-serif;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+}
+.hfx-gc-quote:hover { background: rgba(var(--hfx-chat-tint), 0.1); color: var(--hfx-chat-text); }
+.hfx-gc-quote-name { flex: none; font-weight: bold; color: var(--hfx-chat-strong); }
+#hfx-chat-dock .hfx-gc-quote-name > span {
+  font-size: 11px !important;
+  line-height: inherit !important;
+  letter-spacing: normal !important;
+}
+.hfx-gc-quote-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The quoted message, jumped to */
+@keyframes hfx-gc-flash {
+  from { background: rgba(var(--hfx-chat-tint), 0.18); }
+  to { background: transparent; }
+}
+.hfx-gc-line.hfx-gc-flash { animation: hfx-gc-flash 1.6s ease-out; }
+/* "Replying to Name ×" above the compose box */
+.hfx-chat-replying {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 8px 2px;
+  padding: 3px 4px 3px 8px;
+  border-left: 3px solid var(--hfx-chat-accent);
+  border-radius: 4px;
+  background: var(--hfx-chat-popup);
+  color: var(--hfx-chat-muted);
+  font-size: 11px;
+}
+.hfx-chat-replying[hidden] { display: none; }
+.hfx-chat-replying-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#hfx-chat-dock .hfx-chat-replying-label > span {
+  font-size: 11px !important;
+  line-height: inherit !important;
+  letter-spacing: normal !important;
+}
+.hfx-chat-replying-cancel {
+  flex: none;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--hfx-chat-muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.hfx-chat-replying-cancel:hover { color: var(--hfx-chat-text); }
 .hfx-gc-line a { color: var(--hfx-chat-link); text-decoration: underline; }
 /* Font Awesome link icons in Helpbot notices, like HF draws them */
 .hfx-chat-icon { margin-left: 3px; font-size: 10px; color: var(--hfx-chat-notice-icon); vertical-align: super; }
