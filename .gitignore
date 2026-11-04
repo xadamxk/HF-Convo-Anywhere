@@ -6,3 +6,6 @@ coverage/
 .vscode/
 .idea/
 releases/
+# Chrome for Testing and its profile (holds sign-in cookies) for `npm run browser`
+.chrome-for-testing/
+.browser-profile/

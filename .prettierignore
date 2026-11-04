@@ -1,6 +1,8 @@
 dist/
 coverage/
 node_modules/
+.chrome-for-testing/
+.browser-profile/
 extension/
 package-lock.json
 *.json
