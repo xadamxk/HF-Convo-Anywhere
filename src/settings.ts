@@ -17,6 +17,7 @@ export interface ConvoSettings {
   convoLinks: boolean;
   sound: boolean;
   groupSound: "mentions" | "all";
+  sharedConnection: boolean;
 }
 
 type KeysOfType<T> = {
@@ -163,6 +164,14 @@ export const SETTINGS: SettingDefinition[] = [
       { label: "Mentions only", value: "mentions" },
       { label: "Every message", value: "all" },
     ],
+  },
+  {
+    type: "checkbox",
+    id: "sharedConnection",
+    label: "Share one connection across tabs",
+    description:
+      "Your open HF tabs share one connection to Convo, held by the tab you're looking at, instead of opening one each. Turn off if chats misbehave with several tabs open.",
+    default: true,
   },
 ];
 

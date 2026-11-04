@@ -6,12 +6,18 @@ import {
   RESULT_EVENTS,
 } from "./commandResults";
 import { LinkPreviews, parseEmbed, parsePreviews } from "./formatMessage";
-import { SocketIOClient } from "./SocketIOClient";
+import { LOADED_PARTY_EVENT } from "./SharedSocket";
+import {
+  ConvoSocket,
+  CreateConvoSocket,
+  SocketIOClient,
+} from "./SocketIOClient";
 
 /**
  * Data layer for Convo chat bubbles: talks to HF's Convo websocket (the same
  * one convo.php uses) and keeps conversations and loaded messages in memory.
- * Nothing here is persisted; message bodies never leave this tab.
+ * Nothing here is persisted. With a SharedSocket, messages pass between the
+ * user's own HF tabs, but never leave the browser.
  *
  * Protocol notes (verified 2026-10-20, see #393):
  * - A ticket from `POST /convo.php?action=socket_ticket` authenticates each connection.
@@ -129,9 +135,7 @@ type Listener<K extends keyof ConvoClientEvents> = ConvoClientEvents[K];
 export interface ConvoClientOptions {
   postKey: string;
   origin?: string;
-  createSocket?: (
-    auth: () => Promise<Record<string, unknown>>
-  ) => SocketIOClient;
+  createSocket?: CreateConvoSocket;
   fetch?: typeof fetch;
   randomUUID?: () => string;
 }
@@ -161,7 +165,7 @@ export const wasNotDelivered = (error: unknown): boolean =>
  * with a SendError that says whether it may have gone through.
  */
 export async function sendWithAck(
-  socket: SocketIOClient,
+  socket: ConvoSocket,
   event: string,
   data: unknown,
   unconfirmed: string
@@ -197,7 +201,7 @@ const REPLY_GRACE_MS = 2000;
  * (`request.reply`) if it has one. The answer comes just before the ack.
  */
 export async function sendCommand(
-  socket: SocketIOClient,
+  socket: ConvoSocket,
   request: CommandRequest
 ): Promise<unknown> {
   const reply = request.reply;
@@ -247,7 +251,7 @@ export interface CommandClient {
  * (`mutation`) waits its turn like a message and gets a requestId.
  */
 export async function guardedCommand(
-  socket: SocketIOClient,
+  socket: ConvoSocket,
   request: CommandRequest,
   client: CommandClient
 ): Promise<unknown> {
@@ -386,7 +390,7 @@ export class ConvoClient {
   private readonly seen = new Set<string>();
   private readonly results = new CommandResults();
   private readonly listeners = new Map<string, Set<(...args: any[]) => void>>();
-  private readonly socket: SocketIOClient;
+  private readonly socket: ConvoSocket;
   private readonly fetchFn: typeof fetch;
   private readonly origin: string;
   private readonly randomUUID: () => string;
@@ -776,6 +780,10 @@ export class ConvoClient {
     socket.on("convo_auth_expired", () => {
       socket.disconnect();
       this.connect();
+    });
+    // A tab sharing this socket loaded a chat, which moves the server's typing scope
+    socket.on(LOADED_PARTY_EVENT, (data: any) => {
+      this.loadedParty = chatKey(Boolean(data?.is_group), toInt(data?.party));
     });
     socket.on("convo_loaded_more_inbox", (data: any) => this.onInbox(data));
     socket.on("convo_receivemessage", (data: any) => this.receive(data, true));

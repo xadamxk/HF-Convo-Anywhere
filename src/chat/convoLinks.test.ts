@@ -8,7 +8,7 @@ import {
   interceptConvoLinks,
   pageUserHint,
 } from "./convoLinks";
-import type { SocketIOClient } from "./SocketIOClient";
+import type { ConvoSocket } from "./SocketIOClient";
 
 const HF = "https://hackforums.net";
 const ME = { uid: 10, username: "Me", avatar: "" };
@@ -198,7 +198,7 @@ describe("ChatDock.openChatWithUser", () => {
       postKey: "abc",
       origin: HF,
       randomUUID: () => "req-1",
-      createSocket: () => socket as unknown as SocketIOClient,
+      createSocket: () => socket as unknown as ConvoSocket,
     });
     findParty = jest.fn(async () => 457869);
     dock = new ChatDock({

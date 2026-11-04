@@ -20,7 +20,12 @@ import {
   RESULT_EVENTS,
 } from "./commandResults";
 import { LinkPreviews, parseEmbed, parsePreviews } from "./formatMessage";
-import { SocketIOClient } from "./SocketIOClient";
+import type { ReplayCache } from "./SharedSocket";
+import {
+  ConvoSocket,
+  CreateConvoSocket,
+  SocketIOClient,
+} from "./SocketIOClient";
 
 /**
  * Client for Convo's global (public) room, on its own socket so that joining
@@ -131,6 +136,93 @@ export function parseRoomMessage(raw: any): RoomMessage | null {
   return message;
 }
 
+/**
+ * What a tab sharing the room's socket (see SharedSocket) missed by joining
+ * late: the server sends the room's level, online list and latest 20
+ * messages only on the socket's first convo_join, and can't send older ones.
+ * Keeps the newest level and online list, and up to MESSAGE_LIMIT messages
+ * since the room last restarted.
+ */
+export class RoomReplay implements ReplayCache {
+  private level: unknown[] | null = null;
+  private count: unknown[] | null = null;
+  private messages: Record<string, unknown>[] = [];
+  private readonly keys = new Set<string>();
+  private bootId: string | null = null;
+
+  record(event: string, args: unknown[]): void {
+    switch (event) {
+      case "convo_ready": {
+        const data = args[0] as { bootId?: unknown } | undefined;
+        const bootId = data?.bootId == null ? null : String(data.bootId);
+        // A new boot means the room's messages are gone
+        if (bootId !== this.bootId) {
+          this.messages = [];
+          this.keys.clear();
+          this.bootId = bootId;
+        }
+        return;
+      }
+      case "convo_group_level":
+        this.level = args;
+        return;
+      case "convo_group_count":
+        this.count = args;
+        return;
+      case "convo_receivemessage":
+        this.add([args[0]]);
+        return;
+      case "convo_receivemessage_bulk":
+        if (Array.isArray(args[0])) this.add(args[0]);
+        return;
+    }
+  }
+
+  replay(): [string, unknown[]][] {
+    const events: [string, unknown[]][] = [];
+    if (this.level) events.push(["convo_group_level", this.level]);
+    if (this.count) events.push(["convo_group_count", this.count]);
+    if (this.messages.length) {
+      // History: no sound or "New messages" line, like the server's own on join
+      events.push([
+        "convo_receivemessage_bulk",
+        [this.messages.map((raw) => ({ ...raw, noSound: true }))],
+      ]);
+    }
+    return events;
+  }
+
+  private add(raws: unknown[]): void {
+    for (const raw of raws) {
+      if (!raw || typeof raw !== "object") continue;
+      const message = raw as Record<string, unknown>;
+      if (toInt(message.party_id) !== GLOBAL_PARTY) continue;
+      // Each join's latest 20 repeat; Stanley's id-less notices can't be told apart
+      const mid = toInt(message.mid);
+      if (mid) {
+        const key = `${String(message.bootId ?? this.bootId ?? "")}:${mid}`;
+        if (this.keys.has(key)) continue;
+        this.keys.add(key);
+      }
+      this.messages.push(message);
+    }
+    if (this.messages.length > MESSAGE_LIMIT) {
+      this.messages.splice(0, this.messages.length - MESSAGE_LIMIT);
+      // Keys of dropped messages can go; a repeat of one that old won't come
+      if (this.keys.size > MESSAGE_LIMIT * 2) {
+        this.keys.clear();
+        for (const kept of this.messages) {
+          const keptMid = toInt(kept.mid);
+          if (keptMid)
+            this.keys.add(
+              `${String(kept.bootId ?? this.bootId ?? "")}:${keptMid}`
+            );
+        }
+      }
+    }
+  }
+}
+
 export interface GlobalRoomEvents {
   status: (status: ConvoStatus, reason?: string) => void;
   /** New messages were added; `reset` means the room restarted and earlier ones are gone. */
@@ -145,9 +237,7 @@ export interface GlobalRoomEvents {
 export interface GlobalRoomClientOptions {
   postKey: string;
   origin?: string;
-  createSocket?: (
-    auth: () => Promise<Record<string, unknown>>
-  ) => SocketIOClient;
+  createSocket?: CreateConvoSocket;
   fetch?: typeof fetch;
   randomUUID?: () => string;
   /** Drop Helpbot's (Stanley's) automated notices. */
@@ -175,7 +265,7 @@ export class GlobalRoomClient {
   private readonly seen = new Set<string>();
   private readonly results = new CommandResults();
   private readonly listeners = new Map<string, Set<(...args: any[]) => void>>();
-  private readonly socket: SocketIOClient;
+  private readonly socket: ConvoSocket;
   private readonly randomUUID: () => string;
   private readonly hideHelpbot: boolean;
   private bootId: string | null = null;
