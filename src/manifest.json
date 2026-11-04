@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "HF Convo Anywhere",
   "short_name": "Convo Anywhere",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Chat in Hack Forums' Convo from any page: DMs, group chats and the global chat in a Messenger-style dock.",
   "homepage_url": "https://github.com/xadamxk/HF-Convo-Anywhere",
   "incognito": "spanning",

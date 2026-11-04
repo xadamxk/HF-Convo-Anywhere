@@ -1,11 +1,11 @@
-Chat in Convo from anywhere on Hack Forums!
+Chat in Convo from anywhere on HF!
 
-HF Convo Anywhere brings Hack Forums' Convo to every page of the site. Your direct messages, group chats and the global chat live in a Messenger-style dock, so you can keep browsing threads and still reply without keeping a convo.php tab open.
+HF Convo Anywhere brings HF's Convo to every page of the site. Your direct messages, group chats and the global chat live in a Messenger-style dock, so you can keep browsing threads and still reply without keeping a convo.php tab open.
 
 It's lightweight and does one thing: once installed, your chats are on every page, with every option on one simple settings page.
 
 Features:
-+ Chat dock on every Hack Forums page (hidden on convo.php, where Convo is already open)
++ Chat dock on every HF page (hidden on convo.php, where Convo is already open)
 + Direct messages, group chats (Comrades) and the global chat
 + Bubbles or a Messenger-style list, on the left or right side of the page
 + 15 color themes, from Gray, HF Purple and HFX Blue to High Contrast, Synthwave, Ocean and Sakura
@@ -23,12 +23,18 @@ Features:
 
 Every option is on the extension's settings page (right-click the toolbar icon > Options).
 
-Privacy: HF Convo Anywhere only talks to Hack Forums, using your existing login. It collects nothing and sends nothing to the developer or anyone else.
+Privacy: HF Convo Anywhere only talks to HF, using your existing login. It collects nothing and sends nothing to the developer or anyone else.
 Privacy policy: https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/PRIVACY.md
 
-HF Convo Anywhere is a community project and is not affiliated with or endorsed by Hack Forums.
+HF Convo Anywhere is a community project and is not affiliated with or endorsed by HF.
 
 Changelog:
+2026-11-04: Version 1.1.1:
++ /flip, /jackpot and /price results show as a card under their message
++ Archive a DM with the × on its bubble or list row (it comes back when a new message arrives)
++ Quoted replies: other extension users see the message you replied to above your reply, and clicking the quote jumps to it (in DMs and group chats the quote shows only until the page reloads)
++ A "Replying to" bar above the input lets you cancel a reply
+
 2026-10-31: Version 1.1.0:
 + 15 color themes, picked on the settings page: open HF pages change right away
 + The Open in Convo button no longer shows in HF's link color
