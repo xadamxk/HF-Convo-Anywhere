@@ -1,8 +1,25 @@
 import { FakeBroadcastBus } from "../test-utils/FakeBroadcastBus";
-import { FakeConvoSocket } from "../test-utils/FakeConvoSocket";
 import { FakeLocks } from "../test-utils/FakeLocks";
+import { FakeRelaySocket } from "../test-utils/FakeRelaySocket";
 import { ConvoClient } from "./ConvoClient";
-import { LOADED_PARTY_EVENT, RelaySocket, SharedSocket } from "./SharedSocket";
+import { LOADED_PARTY_EVENT, ReplayCache, SharedSocket } from "./SharedSocket";
+
+/** Keeps every message, and replays them as one bulk. */
+class TestReplay implements ReplayCache {
+  readonly recorded: string[] = [];
+  private readonly messages: unknown[] = [];
+  record(event: string, args: unknown[]): void {
+    this.recorded.push(event);
+    if (event === "convo_receivemessage") this.messages.push(args[0]);
+    if (event === "convo_receivemessage_bulk")
+      this.messages.push(...(args[0] as unknown[]));
+  }
+  replay(): [string, unknown[]][] {
+    return this.messages.length
+      ? [["convo_receivemessage_bulk", [this.messages.slice()]]]
+      : [];
+  }
+}
 
 const NAME = "hfca-socket:convo:1";
 
@@ -12,37 +29,6 @@ const flush = async () => {
       jest.requireActual("timers").setImmediate(resolve)
     );
 };
-
-/** The real socket a leading tab opens: tests open and drop it like a server. */
-class FakeRelaySocket extends FakeConvoSocket implements RelaySocket {
-  private readonly any: ((event: string, ...args: any[]) => void)[] = [];
-
-  onAny(handler: (event: string, ...args: any[]) => void): this {
-    this.any.push(handler);
-    return this;
-  }
-
-  connect(): void {
-    this.connects++;
-  }
-
-  disconnect(): void {
-    const was = this.connected;
-    super.disconnect();
-    if (was) this.fire("disconnect", "io client disconnect");
-  }
-
-  /** The server accepted the connection. */
-  open(): void {
-    this.connected = true;
-    this.fire("connect");
-  }
-
-  fire(event: string, ...args: unknown[]): void {
-    super.fire(event, ...args);
-    this.any.forEach((handler) => handler(event, ...args));
-  }
-}
 
 describe("SharedSocket", () => {
   let locks: FakeLocks;
@@ -57,12 +43,13 @@ describe("SharedSocket", () => {
     clock = 1000;
   });
 
-  const shared = (tabId: string) =>
+  const shared = (tabId: string, replay?: ReplayCache) =>
     new SharedSocket({
       name: NAME,
       locks,
       createChannel: bus.create,
       tabId,
+      replay,
       now: () => clock,
       createSocket: () => {
         const socket = new FakeRelaySocket();
@@ -72,14 +59,15 @@ describe("SharedSocket", () => {
     });
 
   /** A tab's shared socket, recording what its handlers hear. */
-  const tab = (tabId: string) => {
-    const socket = shared(tabId);
+  const tab = (tabId: string, replay?: ReplayCache) => {
+    const socket = shared(tabId, replay);
     const heard: [string, ...unknown[]][] = [];
     for (const event of [
       "connect",
       "disconnect",
       "convo_ready",
       "convo_receivemessage",
+      "convo_receivemessage_bulk",
       "reconnect_failed",
       "convo_auth_expired",
       LOADED_PARTY_EVENT,
@@ -91,7 +79,7 @@ describe("SharedSocket", () => {
 
   /** Tabs a, b, c joined, with a leading and its socket connected and ready. */
   const threeTabs = async () => {
-    const tabs = ["a", "b", "c"].map(tab);
+    const tabs = ["a", "b", "c"].map((id) => tab(id));
     tabs.forEach((t) => t.socket.connect());
     await flush();
     sockets[0].open();
@@ -231,7 +219,7 @@ describe("SharedSocket", () => {
   });
 
   it("refuses emits while the shared socket isn't connected", async () => {
-    const [a, b] = ["a", "b"].map(tab);
+    const [a, b] = ["a", "b"].map((id) => tab(id));
     a.socket.connect();
     b.socket.connect();
     await flush();
@@ -356,6 +344,107 @@ describe("SharedSocket", () => {
     sockets[0].fire("reconnect_failed");
     await flush();
     expect(b.heard.at(-1)).toEqual(["reconnect_failed"]);
+  });
+
+  describe("replay", () => {
+    /** a leads and has joined; a room message came; b joins late. */
+    const lateJoin = async () => {
+      const a = tab("a", new TestReplay());
+      a.socket.connect();
+      await flush();
+      sockets[0].ackReplies.convo_join = () => ({ ok: true });
+      sockets[0].open();
+      sockets[0].fire("convo_ready", { user: { uid: 1 } });
+      await a.socket.emitWithAck("convo_join", { publicRoom: true });
+      sockets[0].fire("convo_receivemessage", { mid: 1 });
+      const replay = new TestReplay();
+      const b = tab("b", replay);
+      b.socket.connect();
+      await flush();
+      return { a, b, replay };
+    };
+
+    it("gives a tab whose join comes later what the first join brought, before its ack", async () => {
+      const { b } = await lateJoin();
+      const order: string[] = [];
+      b.socket.on("convo_receivemessage_bulk", () => order.push("replay"));
+
+      await b.socket.emitWithAck("convo_join", { publicRoom: true });
+      order.push("ack");
+
+      expect(order).toEqual(["replay", "ack"]);
+      expect(b.heard.at(-1)).toEqual([
+        "convo_receivemessage_bulk",
+        [{ mid: 1 }],
+      ]);
+      expect(sockets[0].acked.filter(([e]) => e === "convo_join")).toHaveLength(
+        1
+      );
+    });
+
+    it("doesn't replay to the first join, which the server answers itself", async () => {
+      const { a } = await lateJoin();
+      expect(
+        a.heard.some(([event]) => event === "convo_receivemessage_bulk")
+      ).toBe(false);
+    });
+
+    it("replays in the leader's own tab when its client joins second", async () => {
+      const a = tab("a", new TestReplay());
+      const b = tab("b", new TestReplay());
+      a.socket.connect();
+      b.socket.connect();
+      await flush();
+      sockets[0].ackReplies.convo_join = () => ({ ok: true });
+      sockets[0].open();
+      sockets[0].fire("convo_receivemessage", { mid: 4 });
+      await flush();
+      await b.socket.emitWithAck("convo_join", {});
+      await a.socket.emitWithAck("convo_join", {});
+
+      expect(a.heard.at(-1)).toEqual([
+        "convo_receivemessage_bulk",
+        [{ mid: 4 }],
+      ]);
+    });
+
+    it("keeps what a follower is replayed and passed, so it can lead next", async () => {
+      const { b, replay } = await lateJoin();
+      // b's cache starts with what its catch-up gave it
+      expect(replay.recorded).toEqual(["convo_ready"]);
+
+      await b.socket.emitWithAck("convo_join", {});
+      sockets[0].fire("convo_receivemessage", { mid: 2 });
+      await flush();
+
+      expect(replay.recorded).toEqual([
+        "convo_ready",
+        "convo_receivemessage_bulk",
+        "convo_receivemessage",
+      ]);
+    });
+
+    it("passes the replay on to a tab that leads next", async () => {
+      const { a, b } = await lateJoin();
+      await b.socket.emitWithAck("convo_join", {});
+      const c = tab("c", new TestReplay());
+      c.socket.connect();
+      await flush();
+      clock = 2000;
+      a.socket.disconnect();
+      await flush();
+
+      // b leads now, with a's history; c joins through b
+      expect(b.socket.leader.isLeader).toBe(true);
+      sockets[1].ackReplies.convo_join = () => ({ ok: true });
+      sockets[1].open();
+      await b.socket.emitWithAck("convo_join", {});
+      await c.socket.emitWithAck("convo_join", {});
+      expect(c.heard.at(-1)).toEqual([
+        "convo_receivemessage_bulk",
+        [{ mid: 1 }],
+      ]);
+    });
   });
 
   it("disconnects a follower like a socket", async () => {

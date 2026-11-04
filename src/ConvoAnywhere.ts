@@ -4,6 +4,7 @@ import { sharedSocketFactory } from "./chat/SharedSocket";
 import { interceptConvoLinks, pageUserHint } from "./chat/convoLinks";
 import { fetchGroupList, GroupInfo } from "./chat/groupList";
 import { GlobalChatWindow } from "./chat/GlobalChatWindow";
+import { RoomReplay } from "./chat/GlobalRoomClient";
 import { MessageSound } from "./chat/sound";
 import { CHAT_DOCK_CSS } from "./chat/styles";
 import { Logger } from "./core/Logger";
@@ -62,15 +63,22 @@ export class ConvoAnywhere {
     if (!postKey || !this.shouldRun()) return;
 
     addCssToPage(CHAT_DOCK_CSS);
-    // One Convo socket for all HF tabs (#3); falls back to one per tab
+    // One DM socket and one global room socket for all HF tabs (#3); each
+    // falls back to one per tab. Only tabs with the global window open want
+    // the room's, so the user leaves the room when the last one closes it.
     const uid = getCurrentUser()?.uid;
-    const createSocket =
-      settings.sharedConnection !== false && uid
-        ? sharedSocketFactory(
-            `hfca-socket:convo:${uid}`,
-            convoSocketUrl(location.origin)
-          )
-        : undefined;
+    const share = settings.sharedConnection !== false && Boolean(uid);
+    const socketUrl = convoSocketUrl(location.origin);
+    const createSocket = share
+      ? sharedSocketFactory(`hfca-socket:convo:${uid}`, socketUrl)
+      : undefined;
+    const createGlobalSocket = share
+      ? sharedSocketFactory(
+          `hfca-socket:global:${uid}`,
+          socketUrl,
+          () => new RoomReplay()
+        )
+      : undefined;
     const client = new ConvoClient({ postKey, createSocket });
     const sound = settings.sound ? new MessageSound() : undefined;
     const dock = new ChatDock({
@@ -100,6 +108,7 @@ export class ConvoAnywhere {
           ? ({ minimized, onClose, onChange, openChat }) =>
               new GlobalChatWindow({
                 postKey,
+                createSocket: createGlobalSocket,
                 minimized,
                 openChat,
                 typingIndicators: settings.typingIndicators !== false,

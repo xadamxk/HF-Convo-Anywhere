@@ -45,6 +45,18 @@ const REQUEST = "request";
 const RESPONSE = "response";
 const HELLO = "hello";
 const STATE = "state";
+const REPLAY = "replay";
+
+/**
+ * What a tab that joins late missed, like the global room's recent messages,
+ * which the server only sends on the first convo_join. Every tab records the
+ * events it sees, so whichever tab leads next still has them.
+ */
+export interface ReplayCache {
+  record(event: string, args: unknown[]): void;
+  /** Events to fire in a tab whose convo_join was answered from the first one. */
+  replay(): [string, unknown[]][];
+}
 
 const DEFAULT_ACK_TIMEOUT = 20000;
 /** How much longer than the ack's own timeout a follower waits for the leader's answer. */
@@ -65,6 +77,8 @@ export interface SharedSocketOptions {
   createChannel: (name: string) => ChannelLike;
   /** Opens the real socket, when this tab leads. */
   createSocket: () => RelaySocket;
+  /** What to replay to tabs that join late, beyond convo_ready. */
+  replay?: ReplayCache;
   tabId?: string;
   now?: () => number;
 }
@@ -72,6 +86,7 @@ export interface SharedSocketOptions {
 export class SharedSocket implements ConvoSocket {
   readonly leader: TabLeader;
   private readonly createSocket: () => RelaySocket;
+  private readonly cache: ReplayCache | null;
   private readonly handlers = new Map<string, Set<Handler>>();
   private readonly pending = new Map<number, Pending>();
   private real: RelaySocket | null = null;
@@ -88,6 +103,7 @@ export class SharedSocket implements ConvoSocket {
 
   constructor(options: SharedSocketOptions) {
     this.createSocket = options.createSocket;
+    this.cache = options.replay ?? null;
     this.leader = new TabLeader({
       name: options.name,
       locks: options.locks,
@@ -214,6 +230,7 @@ export class SharedSocket implements ConvoSocket {
     }
     // Server acks can't go to other tabs; this tab's handlers still get them
     const cloneable = args.filter((arg) => typeof arg !== "function");
+    this.cache?.record(event, cloneable);
     switch (event) {
       case "connect":
         this.ready = null;
@@ -239,24 +256,34 @@ export class SharedSocket implements ConvoSocket {
     this.leader.post({ type: EVENT, name, args });
   }
 
-  /** Run an acked emit on the real socket, for this tab or another. */
+  /**
+   * Run an acked emit on the real socket, for this tab or (`from`) another.
+   */
   private leaderAck<T>(
     event: string,
     data: unknown,
-    timeoutMs: number
+    timeoutMs: number,
+    from?: string
   ): Promise<T> {
     const real = this.real;
     if (!real?.connected) return Promise.reject(new Error("Not connected."));
     if (event === "convo_join") {
-      // Each tab's client joins after convo_ready; the server only needs it once
+      // Each tab's client joins after convo_ready; the server only needs it
+      // once, and only answers the first with what it sends on joining
       if (!this.joined) {
         const joined = real.emitWithAck(event, data, timeoutMs);
         this.joined = joined;
         joined.catch(() => {
           if (this.joined === joined) this.joined = null;
         });
+        return joined as Promise<T>;
       }
-      return this.joined as Promise<T>;
+      // Replay what the first join brought before answering, so the tab has
+      // it once its client is ready
+      return this.joined.then((result) => {
+        this.sendReplay(from);
+        return result as T;
+      });
     }
     const result = real.emitWithAck<T>(event, data, timeoutMs);
     if (event === "convo_loadmessages") {
@@ -264,6 +291,17 @@ export class SharedSocket implements ConvoSocket {
       this.relay(LOADED_PARTY_EVENT, [data]);
     }
     return result;
+  }
+
+  /** Fire the replay cache's events in a tab that joined late: another (`to`), or this one. */
+  private sendReplay(to?: string): void {
+    const events = this.cache?.replay() ?? [];
+    if (!events.length) return;
+    if (to) {
+      this.leader.post({ type: REPLAY, to, events });
+      return;
+    }
+    for (const [name, args] of events) this.fire(name, ...args);
   }
 
   private onRequest(message: TabMessage): void {
@@ -289,7 +327,7 @@ export class SharedSocket implements ConvoSocket {
       typeof message.timeout === "number"
         ? message.timeout
         : DEFAULT_ACK_TIMEOUT;
-    this.leaderAck(message.name, message.data, timeout).then(
+    this.leaderAck(message.name, message.data, timeout, from).then(
       (result) => respond({ result }),
       (error) => {
         const text = String(error?.message || "Convo request failed.");
@@ -344,12 +382,32 @@ export class SharedSocket implements ConvoSocket {
         )
           this.onState(message);
         return;
+      case REPLAY:
+        if (
+          message.to === this.leader.tabId &&
+          this.leader.isFromLeader(message) &&
+          Array.isArray(message.events)
+        )
+          this.onReplay(message.events);
+        return;
+    }
+  }
+
+  private onReplay(events: unknown[]): void {
+    for (const entry of events) {
+      if (!Array.isArray(entry) || typeof entry[0] !== "string") continue;
+      const [name, args] = entry as [string, unknown];
+      const list = Array.isArray(args) ? args : [];
+      // Kept too, in case this tab leads next
+      this.cache?.record(name, list);
+      this.fire(name, ...list);
     }
   }
 
   private onRelayed(message: TabMessage): void {
     if (typeof message.name !== "string") return;
     const args = Array.isArray(message.args) ? message.args : [];
+    this.cache?.record(message.name, args);
     switch (message.name) {
       case "connect":
         this.ready = null;
@@ -373,6 +431,7 @@ export class SharedSocket implements ConvoSocket {
     // Unless it already came through, start this tab's client as convo_ready does
     if (!this.ready && Array.isArray(message.ready)) {
       this.ready = message.ready;
+      this.cache?.record("convo_ready", message.ready);
       this.fire("convo_ready", ...message.ready);
     }
   }
@@ -436,7 +495,8 @@ export class SharedSocket implements ConvoSocket {
  */
 export function sharedSocketFactory(
   name: string,
-  url: string
+  url: string,
+  createReplay?: () => ReplayCache
 ): CreateConvoSocket | undefined {
   const locks = (navigator as any).locks as LockManagerLike | undefined;
   if (!locks || typeof BroadcastChannel !== "function") return undefined;
@@ -447,5 +507,6 @@ export function sharedSocketFactory(
       createChannel: (channel) =>
         new BroadcastChannel(channel) as unknown as ChannelLike,
       createSocket: () => new SocketIOClient({ url, auth }),
+      replay: createReplay?.(),
     });
 }

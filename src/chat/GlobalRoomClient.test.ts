@@ -1,5 +1,14 @@
+import { FakeBroadcastBus } from "../test-utils/FakeBroadcastBus";
+import { FakeLocks } from "../test-utils/FakeLocks";
+import { FakeRelaySocket } from "../test-utils/FakeRelaySocket";
 import { commandRequest } from "./commands";
-import { GlobalRoomClient, parseRoomMessage, rankOf } from "./GlobalRoomClient";
+import {
+  GlobalRoomClient,
+  parseRoomMessage,
+  rankOf,
+  RoomReplay,
+} from "./GlobalRoomClient";
+import { SharedSocket } from "./SharedSocket";
 import type { ConvoSocket } from "./SocketIOClient";
 
 const ME = { uid: 10, username: "Me", avatar: "", usergroup: 2, group: 2 };
@@ -437,5 +446,169 @@ describe("GlobalRoomClient", () => {
     client.disconnect();
     expect(socket.disconnect).toHaveBeenCalled();
     expect(client.typing.size).toBe(0);
+  });
+});
+
+describe("RoomReplay", () => {
+  const bulk = (replay: RoomReplay) =>
+    replay
+      .replay()
+      .find(([event]) => event === "convo_receivemessage_bulk")?.[1][0] as
+      Record<string, unknown>[] | undefined;
+
+  it("replays the newest level, online list and messages, as history", () => {
+    const replay = new RoomReplay();
+    replay.record("convo_ready", [{ user: ME, bootId: "boot-1" }]);
+    replay.record("convo_group_level", [0]);
+    replay.record("convo_group_level", [2]);
+    replay.record("convo_group_count", [{ count: 1, users: {} }]);
+    replay.record("convo_receivemessage_bulk", [[roomMessage({ mid: 1 })]]);
+    replay.record("convo_receivemessage", [roomMessage({ mid: 2 })]);
+
+    const events = replay.replay();
+    expect(events.map(([event]) => event)).toEqual([
+      "convo_group_level",
+      "convo_group_count",
+      "convo_receivemessage_bulk",
+    ]);
+    expect(events[0][1]).toEqual([2]);
+    expect(bulk(replay)?.map((m) => [m.mid, m.noSound])).toEqual([
+      [1, true],
+      [2, true],
+    ]);
+  });
+
+  it("keeps each message once, though every join's latest 20 repeat", () => {
+    const replay = new RoomReplay();
+    replay.record("convo_ready", [{ bootId: "boot-1" }]);
+    const page = [roomMessage({ mid: 1 }), roomMessage({ mid: 2 })];
+    replay.record("convo_receivemessage_bulk", [page]);
+    replay.record("convo_receivemessage_bulk", [page]);
+    expect(bulk(replay)?.map((m) => m.mid)).toEqual([1, 2]);
+  });
+
+  it("keeps Stanley's id-less notices", () => {
+    const replay = new RoomReplay();
+    replay.record("convo_receivemessage", [roomMessage({ mid: 0, uid: 1337 })]);
+    replay.record("convo_receivemessage", [roomMessage({ mid: 0, uid: 1337 })]);
+    expect(bulk(replay)).toHaveLength(2);
+  });
+
+  it("keeps the newest 300 messages", () => {
+    const replay = new RoomReplay();
+    replay.record("convo_ready", [{ bootId: "boot-1" }]);
+    for (let mid = 1; mid <= 700; mid++)
+      replay.record("convo_receivemessage", [roomMessage({ mid })]);
+    const kept = bulk(replay)!;
+    expect(kept).toHaveLength(300);
+    expect(kept[0].mid).toBe(401);
+    expect(kept[299].mid).toBe(700);
+    // Repeats of kept messages are still recognized after trimming
+    replay.record("convo_receivemessage", [roomMessage({ mid: 700 })]);
+    expect(bulk(replay)).toHaveLength(300);
+  });
+
+  it("forgets the messages when the room restarts", () => {
+    const replay = new RoomReplay();
+    replay.record("convo_ready", [{ bootId: "boot-1" }]);
+    replay.record("convo_receivemessage", [roomMessage({ mid: 5 })]);
+    replay.record("convo_ready", [{ bootId: "boot-1" }]);
+    expect(bulk(replay)).toHaveLength(1);
+    replay.record("convo_ready", [{ bootId: "boot-2" }]);
+    expect(bulk(replay)).toBeUndefined();
+  });
+
+  it("ignores anything but room messages", () => {
+    const replay = new RoomReplay();
+    replay.record("convo_receivemessage", [roomMessage({ party_id: 5 })]);
+    replay.record("convo_receivemessage", [null]);
+    replay.record("convo_receivemessage_bulk", ["nope"]);
+    replay.record("type_notice_add", [{ uid: 1 }]);
+    expect(replay.replay()).toEqual([]);
+  });
+});
+
+describe("GlobalRoomClient over a SharedSocket", () => {
+  const settle = async () => {
+    for (let i = 0; i < 8; i++)
+      await new Promise((resolve) =>
+        jest.requireActual("timers").setImmediate(resolve)
+      );
+  };
+
+  it("shares one room socket, catching up a tab that opens the room later", async () => {
+    const locks = new FakeLocks();
+    const bus = new FakeBroadcastBus();
+    const sockets: FakeRelaySocket[] = [];
+    const client = (tabId: string) =>
+      new GlobalRoomClient({
+        postKey: "abc",
+        origin: "https://hackforums.net",
+        randomUUID: () => `${tabId}-req`,
+        createSocket: () =>
+          new SharedSocket({
+            name: "hfca-socket:global:10",
+            locks,
+            createChannel: bus.create,
+            tabId,
+            replay: new RoomReplay(),
+            createSocket: () => {
+              const socket = new FakeRelaySocket();
+              sockets.push(socket);
+              return socket;
+            },
+          }),
+      });
+
+    // Tab a opens the room; the server answers its join with the room
+    const a = client("a");
+    a.connect();
+    await settle();
+    const real = sockets[0];
+    real.open();
+    real.fire("convo_ready", { user: ME, bootId: "boot-1" });
+    await settle();
+    real.fire("convo_group_count", { count: 2, users: { 10: ME, 20: NOVA } });
+    real.fire("convo_receivemessage_bulk", [
+      roomMessage({ mid: 1 }),
+      roomMessage({ mid: 2 }),
+    ]);
+    real.fire("convo_receivemessage", roomMessage({ mid: 3 }));
+    await settle();
+    expect(a.status).toBe("ready");
+    expect(a.messages.map((m) => m.mid)).toEqual([1, 2, 3]);
+
+    // Tab b opens it later: no new socket or join, and it gets all of it
+    const b = client("b");
+    b.connect();
+    await settle();
+    expect(sockets).toHaveLength(1);
+    expect(real.acked.filter(([e]) => e === "convo_join")).toHaveLength(1);
+    expect(b.status).toBe("ready");
+    expect(b.messages.map((m) => m.mid)).toEqual([1, 2, 3]);
+    expect(b.messages.every((m) => m.quiet)).toBe(true);
+    expect(b.onlineCount).toBe(2);
+
+    // Live messages reach both; b can send
+    real.fire("convo_receivemessage", roomMessage({ mid: 4 }));
+    await settle();
+    expect(b.messages.at(-1)?.mid).toBe(4);
+    expect(b.messages.at(-1)?.quiet).toBeUndefined();
+    await b.send("hi all");
+    expect(real.acked.at(-1)).toEqual([
+      "convo_newmessage",
+      { partyID: -1, message: "hi all", requestId: "b-req" },
+    ]);
+
+    // a closes the room: b takes the socket over, with its history
+    a.disconnect();
+    await settle();
+    expect(real.connected).toBe(false);
+    expect(sockets).toHaveLength(2);
+    sockets[1].open();
+    sockets[1].fire("convo_ready", { user: ME, bootId: "boot-1" });
+    await settle();
+    expect(b.status).toBe("ready");
+    expect(b.messages.map((m) => m.mid)).toEqual([1, 2, 3, 4]);
   });
 });

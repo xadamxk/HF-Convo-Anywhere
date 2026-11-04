@@ -8,6 +8,7 @@ import {
   RoomUser,
 } from "./GlobalRoomClient";
 import { RoomChatWindow, RoomWindowOptions } from "./RoomChatWindow";
+import type { CreateConvoSocket } from "./SocketIOClient";
 import { MessageSoundPlayer, mutedParties } from "./sound";
 
 export { groupTime, typingText } from "./RoomChatWindow";
@@ -21,6 +22,8 @@ export { groupTime, typingText } from "./RoomChatWindow";
 export interface GlobalChatWindowOptions extends RoomWindowOptions {
   postKey: string;
   createClient?: () => GlobalRoomClient;
+  /** The room client's socket, e.g. one shared across tabs. */
+  createSocket?: CreateConvoSocket;
   /** Plays HF's sound for new messages that mention the user. */
   sound?: MessageSoundPlayer;
   /** Hide Stanley's (Helpbot's) automated notices. */
@@ -61,6 +64,7 @@ export class GlobalChatWindow extends RoomChatWindow {
         postKey: options.postKey,
         origin,
         hideHelpbot: options.hideHelpbot,
+        createSocket: options.createSocket,
       });
     const onlineButton = el(
       "button",
