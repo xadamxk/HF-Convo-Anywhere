@@ -1,3 +1,5 @@
+import { pageRealmPromise, toPageRealm } from "../core/pageRealm";
+
 /**
  * The new-message sound, as HF's own Convo plays it (convo_1d.js): its
  * convo-blip.mp3, skipping conversations muted on convo.php (the volume icon
@@ -104,11 +106,14 @@ export class MessageSound implements MessageSoundPlayer {
         .request(
           `hfx-convo-sound:${key}`,
           { ifAvailable: true },
-          async (lock) => {
-            if (!lock) return;
+          // Exported to the page, with the page's promise holding the lock:
+          // in Firefox the lock would otherwise be released at once, and
+          // every tab would play (see core/pageRealm)
+          toPageRealm((lock: unknown) => {
+            if (!lock) return undefined;
             this.playNow();
-            await new Promise((resolve) => setTimeout(resolve, CLAIM_MS));
-          }
+            return pageRealmPromise((resolve) => setTimeout(resolve, CLAIM_MS));
+          })
         )
         .catch(() => undefined);
     // Give a visible tab the first chance: hidden tabs may hold back media

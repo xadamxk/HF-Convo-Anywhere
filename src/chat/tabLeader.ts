@@ -1,4 +1,5 @@
 import { Logger } from "../core/Logger";
+import { pageRealmPromise, toPageRealm } from "../core/pageRealm";
 
 /**
  * Picks one tab to lead among the HF tabs that want something (e.g. the
@@ -24,42 +25,6 @@ export const TAB_PROTOCOL_VERSION = 1;
 
 /** How long to wait before asking for the lock again after it failed for any reason but a steal. */
 const LOCK_RETRY_MS = 10000;
-
-/**
- * In a Firefox content script, `navigator.locks` is the page's LockManager,
- * and it can't use what a content script's own callback returns ("Permission
- * denied to access property 'then'"), which releases the lock at once. So the
- * lock callback is exported to the page (toPageRealm), and the promise it
- * returns to hold the lock is made in the page's realm (pageRealmPromise).
- * Elsewhere both are the plain function and an ordinary promise.
- */
-export function toPageRealm<T extends (...args: any[]) => any>(fn: T): T {
-  const scope = globalThis as any;
-  return typeof scope.exportFunction === "function" && scope.window
-    ? scope.exportFunction(fn, scope.window)
-    : fn;
-}
-
-/** The promise a Web Lock callback returns, which keeps the lock until it settles (see toPageRealm). */
-export function pageRealmPromise(
-  executor: (resolve: () => void) => void
-): Promise<void> {
-  const scope = globalThis as any;
-  const pagePromise = scope.window?.wrappedJSObject?.Promise;
-  const exportFunction = scope.exportFunction;
-  if (
-    typeof pagePromise === "function" &&
-    typeof exportFunction === "function"
-  ) {
-    return new pagePromise(
-      exportFunction(
-        (resolve: () => void) => executor(() => resolve()),
-        scope.window
-      )
-    );
-  }
-  return new Promise<void>((resolve) => executor(() => resolve()));
-}
 
 export interface LockManagerLike {
   request(
@@ -160,7 +125,7 @@ export interface TabLeaderOptions {
   /** Resolves when the leader's work in flight is done, before it hands over. */
   whenIdle?: () => Promise<void>;
   timing?: Partial<LeaderTiming>;
-  /** Makes the promise that holds the lock (see pageRealmPromise). */
+  /** Makes the promise that holds the lock (see core/pageRealm). */
   createHold?: (executor: (resolve: () => void) => void) => Promise<void>;
   tabId?: string;
   now?: () => number;
