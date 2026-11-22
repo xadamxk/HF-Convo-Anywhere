@@ -32,6 +32,11 @@ export interface LockManagerLike {
     options: { signal?: AbortSignal; steal?: boolean },
     callback: (lock: unknown) => Promise<unknown>
   ): Promise<unknown>;
+  /** Which locks are held and requested (navigator.locks.query). */
+  query?(): Promise<{
+    held?: ArrayLike<{ name?: string }>;
+    pending?: ArrayLike<{ name?: string }>;
+  }>;
 }
 
 export interface ChannelLike {
@@ -78,6 +83,8 @@ export interface LeaderTiming {
   staleVisible: number;
   /** A hidden tab does after this long (its timers may be slowed to once a minute). */
   staleHidden: number;
+  /** A waiting tab takes a lock nobody holds after seeing it free this long. */
+  stuckLock: number;
 }
 
 export const DEFAULT_TIMING: LeaderTiming = {
@@ -87,6 +94,7 @@ export const DEFAULT_TIMING: LeaderTiming = {
   handoffTimeout: 6000,
   staleVisible: 15000,
   staleHidden: 5 * 60000,
+  stuckLock: 4000,
 };
 
 export type LeaderRole = "idle" | "follower" | "leader";
@@ -191,6 +199,9 @@ export class TabLeader {
   ) => Promise<void>;
   /** A hidden tab's extra wait before taking over a quiet leader, so they don't all at once. */
   private staleJitter = 0;
+  /** When this waiting tab first saw the lock held by nobody (0: not seen). */
+  private freeSince = 0;
+  private checkingLock = false;
 
   constructor(options: TabLeaderOptions) {
     this.name = options.name;
@@ -313,6 +324,7 @@ export class TabLeader {
   /** Ask for the lock: wait in line, or (`steal`) take it now. */
   private contend(steal: boolean): void {
     const attempt = ++this.attempt;
+    this.freeSince = 0;
     const controller = steal ? null : new AbortController();
     this.queued = controller;
     // A steal can't be aborted, but it's granted at once
@@ -488,7 +500,9 @@ export class TabLeader {
 
   /** A follower's check that the leader is still there. */
   private checkLeader(): void {
-    if (this.role !== "follower" || !this.leader) return;
+    if (this.role !== "follower") return;
+    void this.checkLockFree();
+    if (!this.leader) return;
     const quiet = this.now() - this.lastHeard;
     const limit = this.visible()
       ? this.timing.staleVisible
@@ -498,6 +512,46 @@ export class TabLeader {
         `No word from the ${this.name} leader in ${Math.round(quiet / 1000)}s; taking over`
       );
       this.steal();
+    }
+  }
+
+  /**
+   * A waiting tab's check that the lock isn't free and stuck: after a
+   * back/forward cache restore, Chrome was seen leaving the lock held by
+   * nobody while tabs waited for it, which would leave every tab without a
+   * connection. Nobody holds it, so taking it is safe; if two tabs do at
+   * once, one wins and the other waits again, as with any steal.
+   */
+  private async checkLockFree(): Promise<void> {
+    if (!this.locks.query || this.checkingLock || !this.queued) return;
+    this.checkingLock = true;
+    try {
+      const snapshot = await this.locks.query();
+      if (this.role !== "follower" || !this.queued) {
+        this.freeSince = 0;
+        return;
+      }
+      const held = Array.from(snapshot?.held ?? []).some(
+        (lock) => lock?.name === this.name
+      );
+      if (held) {
+        this.freeSince = 0;
+        return;
+      }
+      if (!this.freeSince) {
+        this.freeSince = this.now();
+        return;
+      }
+      if (this.now() - this.freeSince >= this.timing.stuckLock) {
+        Logger.warn(
+          `The ${this.name} lock is free but this tab's request wasn't granted; taking it`
+        );
+        this.steal();
+      }
+    } catch {
+      // No query: nothing to check
+    } finally {
+      this.checkingLock = false;
     }
   }
 

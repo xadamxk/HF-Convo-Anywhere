@@ -435,6 +435,32 @@ describe("TabLeader", () => {
       expect(a.isLeader).toBe(true);
       expect(b.isLeader).toBe(false);
     });
+
+    it("takes a lock nobody holds when its request is stuck (seen after a bfcache restore)", async () => {
+      const { a, b } = await hiddenLeader();
+      // The browser stops granting the lock to those waiting
+      locks.stuck = true;
+      a.leave();
+      await flush();
+      expect(locks.isHeld(NAME)).toBe(false);
+      expect(b.isLeader).toBe(false);
+
+      // Not at the first sight of a free lock: a handover leaves it free for a moment
+      await advance(2000);
+      expect(b.isLeader).toBe(false);
+      await advance(5000);
+      expect(b.isLeader).toBe(true);
+      expect(console.warn).toHaveBeenCalledWith(
+        expect.stringContaining("free but this tab's request wasn't granted")
+      );
+    });
+
+    it("leaves a held lock alone, however long it waits", async () => {
+      const { a, b } = await hiddenLeader();
+      await advance(60000);
+      expect(a.isLeader).toBe(true);
+      expect(b.isLeader).toBe(false);
+    });
   });
 
   describe("when the lock fails", () => {

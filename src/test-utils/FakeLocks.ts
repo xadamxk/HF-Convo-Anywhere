@@ -18,6 +18,8 @@ const abortError = () =>
   new DOMException("The request was aborted.", "AbortError");
 
 export class FakeLocks {
+  /** Act like Chrome after a bfcache restore: a released lock isn't granted to those waiting. */
+  stuck = false;
   private readonly held = new Map<string, Waiter>();
   private readonly queues = new Map<string, Waiter[]>();
 
@@ -57,6 +59,19 @@ export class FakeLocks {
     });
   }
 
+  /** navigator.locks.query: names held and requested. */
+  async query(): Promise<{
+    held: { name: string }[];
+    pending: { name: string }[];
+  }> {
+    return {
+      held: Array.from(this.held.keys()).map((name) => ({ name })),
+      pending: Array.from(this.queues.entries()).flatMap(([name, queue]) =>
+        queue.map(() => ({ name }))
+      ),
+    };
+  }
+
   /** Whether `name` is held. */
   isHeld(name: string): boolean {
     return this.held.has(name);
@@ -73,6 +88,7 @@ export class FakeLocks {
   }
 
   private pump(name: string): void {
+    if (this.stuck) return;
     const queue = this.queue(name);
     if (!this.held.has(name) && queue.length) this.grant(name, queue.shift()!);
   }
