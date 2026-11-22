@@ -22,6 +22,45 @@ import { Logger } from "../core/Logger";
 
 export const TAB_PROTOCOL_VERSION = 1;
 
+/** How long to wait before asking for the lock again after it failed for any reason but a steal. */
+const LOCK_RETRY_MS = 10000;
+
+/**
+ * In a Firefox content script, `navigator.locks` is the page's LockManager,
+ * and it can't use what a content script's own callback returns ("Permission
+ * denied to access property 'then'"), which releases the lock at once. So the
+ * lock callback is exported to the page (toPageRealm), and the promise it
+ * returns to hold the lock is made in the page's realm (pageRealmPromise).
+ * Elsewhere both are the plain function and an ordinary promise.
+ */
+export function toPageRealm<T extends (...args: any[]) => any>(fn: T): T {
+  const scope = globalThis as any;
+  return typeof scope.exportFunction === "function" && scope.window
+    ? scope.exportFunction(fn, scope.window)
+    : fn;
+}
+
+/** The promise a Web Lock callback returns, which keeps the lock until it settles (see toPageRealm). */
+export function pageRealmPromise(
+  executor: (resolve: () => void) => void
+): Promise<void> {
+  const scope = globalThis as any;
+  const pagePromise = scope.window?.wrappedJSObject?.Promise;
+  const exportFunction = scope.exportFunction;
+  if (
+    typeof pagePromise === "function" &&
+    typeof exportFunction === "function"
+  ) {
+    return new pagePromise(
+      exportFunction(
+        (resolve: () => void) => executor(() => resolve()),
+        scope.window
+      )
+    );
+  }
+  return new Promise<void>((resolve) => executor(() => resolve()));
+}
+
 export interface LockManagerLike {
   request(
     name: string,
@@ -121,6 +160,8 @@ export interface TabLeaderOptions {
   /** Resolves when the leader's work in flight is done, before it hands over. */
   whenIdle?: () => Promise<void>;
   timing?: Partial<LeaderTiming>;
+  /** Makes the promise that holds the lock (see pageRealmPromise). */
+  createHold?: (executor: (resolve: () => void) => void) => Promise<void>;
   tabId?: string;
   now?: () => number;
   random?: () => number;
@@ -179,6 +220,10 @@ export class TabLeader {
   private activeTimer: ReturnType<typeof setTimeout> | null = null;
   private claimTimer: ReturnType<typeof setTimeout> | null = null;
   private handoffTimer: ReturnType<typeof setTimeout> | null = null;
+  private retryTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly createHold: (
+    executor: (resolve: () => void) => void
+  ) => Promise<void>;
   /** A hidden tab's extra wait before taking over a quiet leader, so they don't all at once. */
   private staleJitter = 0;
 
@@ -192,6 +237,7 @@ export class TabLeader {
     this.tabId = options.tabId ?? randomId();
     this.now = options.now ?? (() => Date.now());
     this.random = options.random ?? Math.random;
+    this.createHold = options.createHold ?? pageRealmPromise;
   }
 
   on<K extends keyof TabLeaderEvents>(
@@ -309,28 +355,46 @@ export class TabLeader {
       ? { signal: controller.signal }
       : { steal: true };
     this.locks
-      .request(this.name, options, (lock) => {
-        // Granted after this tab moved on: let it go at once
-        if (attempt !== this.attempt || !lock) return Promise.resolve();
-        this.queued = null;
-        return new Promise<void>((resolve) => {
-          this.release = resolve;
-          this.becomeLeader();
-        });
-      })
+      .request(
+        this.name,
+        options,
+        toPageRealm((lock: unknown) => {
+          // Granted after this tab moved on: let it go at once
+          if (attempt !== this.attempt || !lock)
+            return this.createHold((resolve) => resolve());
+          this.queued = null;
+          return this.createHold((resolve) => {
+            this.release = resolve;
+            this.becomeLeader();
+          });
+        })
+      )
       .catch((error) => {
         if (attempt !== this.attempt) return;
-        // The lock was stolen by another tab: follow, and get back in line
-        if (this.role === "leader") {
+        const wasLeader = this.role === "leader";
+        if (wasLeader) {
           this.release = null;
           this.stopLeading();
           if (this.leader?.tabId === this.tabId) this.leader = null;
           this.lastHeard = this.now();
           this.setRole("follower");
+        }
+        // Stolen by another tab: follow, and get back in line
+        if (wasLeader && error?.name === "AbortError") {
           this.contend(false);
           return;
         }
-        Logger.error(`Couldn't request the ${this.name} lock`, error);
+        // Anything else would likely fail again at once, so wait before
+        // trying again rather than loop
+        Logger.error(
+          `Couldn't hold the ${this.name} lock; trying again in ${LOCK_RETRY_MS / 1000}s`,
+          error
+        );
+        this.retryTimer = setTimeout(() => {
+          this.retryTimer = null;
+          if (attempt === this.attempt && this.role === "follower")
+            this.contend(false);
+        }, LOCK_RETRY_MS);
       });
   }
 
@@ -377,6 +441,8 @@ export class TabLeader {
     this.clearClaim();
     if (this.watchdogTimer) clearInterval(this.watchdogTimer);
     this.watchdogTimer = null;
+    if (this.retryTimer) clearTimeout(this.retryTimer);
+    this.retryTimer = null;
   }
 
   // --- The user looking at this tab ---

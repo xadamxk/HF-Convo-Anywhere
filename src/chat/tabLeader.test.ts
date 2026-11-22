@@ -1,7 +1,14 @@
 import { FakeActivity } from "../test-utils/FakeActivity";
 import { FakeBroadcastBus } from "../test-utils/FakeBroadcastBus";
 import { FakeLocks } from "../test-utils/FakeLocks";
-import { LeaderInfo, LeaderRole, TabLeader, TabMessage } from "./tabLeader";
+import {
+  LeaderInfo,
+  LeaderRole,
+  pageRealmPromise,
+  toPageRealm,
+  TabLeader,
+  TabMessage,
+} from "./tabLeader";
 
 const NAME = "hfca-socket:convo:1";
 
@@ -434,6 +441,144 @@ describe("TabLeader", () => {
       await advance(10 * 60000);
       expect(a.isLeader).toBe(true);
       expect(b.isLeader).toBe(false);
+    });
+  });
+
+  describe("when the lock fails", () => {
+    beforeEach(() =>
+      jest.useFakeTimers({
+        doNotFake: ["queueMicrotask", "setImmediate", "nextTick"],
+      })
+    );
+    afterEach(() => jest.useRealTimers());
+
+    /**
+     * Firefox's page LockManager can't read a content script's promise, so a
+     * request fails right after it's granted ("Permission denied to access
+     * property 'then'").
+     */
+    class FailingLocks {
+      grants = 0;
+      request(
+        _name: string,
+        _options: unknown,
+        callback: (lock: unknown) => Promise<unknown>
+      ) {
+        this.grants++;
+        callback({ name: _name });
+        return Promise.reject(
+          new Error('Permission denied to access property "then"')
+        );
+      }
+    }
+
+    it("doesn't loop, and tries again after a pause", async () => {
+      const locks = new FailingLocks();
+      const leader = new TabLeader({
+        name: NAME,
+        locks,
+        createChannel: bus.create,
+        tabId: "a",
+      });
+      const roles: LeaderRole[] = [];
+      leader.on("role", (role) => roles.push(role));
+      leader.join();
+      await flush();
+
+      expect(locks.grants).toBe(1);
+      expect(leader.role).toBe("follower");
+      expect(console.error).toHaveBeenCalledWith(
+        expect.stringContaining("trying again in 10s"),
+        expect.any(Error)
+      );
+
+      jest.advanceTimersByTime(9000);
+      await flush();
+      expect(locks.grants).toBe(1);
+      jest.advanceTimersByTime(1000);
+      await flush();
+      expect(locks.grants).toBe(2);
+
+      leader.leave();
+      jest.advanceTimersByTime(60000);
+      await flush();
+      expect(locks.grants).toBe(2);
+      expect(roles).toEqual([
+        "follower",
+        "leader",
+        "follower",
+        "leader",
+        "follower",
+        "idle",
+      ]);
+    });
+
+    it("holds the lock with the promise createHold makes", async () => {
+      const holds: (() => void)[] = [];
+      const leader = new TabLeader({
+        name: NAME,
+        locks,
+        createChannel: bus.create,
+        tabId: "a",
+        createHold: (executor) =>
+          new Promise<void>((resolve) =>
+            executor(() => {
+              holds.push(resolve);
+              resolve();
+            })
+          ),
+      });
+      leader.join();
+      await flush();
+      expect(leader.isLeader).toBe(true);
+      expect(locks.isHeld(NAME)).toBe(true);
+
+      leader.leave();
+      await flush();
+      expect(holds).toHaveLength(1);
+      expect(locks.isHeld(NAME)).toBe(false);
+    });
+  });
+
+  describe("pageRealmPromise", () => {
+    const scope = globalThis as any;
+    afterEach(() => {
+      delete scope.exportFunction;
+      delete (window as any).wrappedJSObject;
+    });
+
+    it("exports a callback to the page only in a Firefox content script", () => {
+      const callback = () => 1;
+      expect(toPageRealm(callback)).toBe(callback);
+      const exported = () => 2;
+      scope.exportFunction = (fn: unknown, target: unknown) =>
+        fn === callback && target === window ? exported : null;
+      expect(toPageRealm(callback)).toBe(exported);
+    });
+
+    it("is an ordinary promise outside a Firefox content script", async () => {
+      let release!: () => void;
+      const promise = pageRealmPromise((resolve) => (release = resolve));
+      expect(promise).toBeInstanceOf(Promise);
+      release();
+      await expect(promise).resolves.toBeUndefined();
+    });
+
+    it("is made in the page's realm in a Firefox content script", async () => {
+      class PagePromise<T> extends Promise<T> {}
+      const exported: unknown[] = [];
+      (window as any).wrappedJSObject = { Promise: PagePromise };
+      scope.exportFunction = (fn: unknown, target: unknown) => {
+        exported.push(target);
+        return fn;
+      };
+      let release!: () => void;
+      const promise = pageRealmPromise((resolve) => (release = resolve));
+
+      expect(promise).toBeInstanceOf(PagePromise);
+      expect(exported).toEqual([window]);
+      release();
+      await expect(promise).resolves.toBeUndefined();
     });
   });
 
