@@ -40,3 +40,7 @@ Chat in Convo from anywhere on HackForums - your DMs, group chats and the global
   <summary>Settings:</summary>
   <img src="https://github.com/xadamxk/HF-Convo-Anywhere/blob/main/store/5-settings.png?raw=true" title="Settings"  />
 </details>
+
+## Many tabs, one connection
+
+However many HF tabs you have open, they share one connection to Convo for your DMs and group chats, and one for the global chat while its window is open in any tab. The connection lives in the tab you're looking at, and another tab takes over when that one closes. Turn off **Share one connection across tabs** in the settings to have each tab connect on its own instead.

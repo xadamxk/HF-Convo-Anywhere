@@ -1,8 +1,10 @@
+import type { ConvoSocket } from "../chat/SocketIOClient";
+
 /**
  * Stand-in for SocketIOClient in Convo tests: records emits and acked emits,
  * answers acks from `ackReplies`, and lets tests fire server events.
  */
-export class FakeConvoSocket {
+export class FakeConvoSocket implements ConvoSocket {
   connected = false;
   connects = 0;
   disconnects = 0;

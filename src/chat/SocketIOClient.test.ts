@@ -174,6 +174,25 @@ describe("SocketIOClient", () => {
     expect(latest().sent).toContain('437["pong"]');
   });
 
+  it("reports every event, lifecycle included, to onAny after its handlers", async () => {
+    const order: string[] = [];
+    client.on("convo_ready", () => order.push("handler"));
+    client.onAny((event, ...args) =>
+      order.push(`any:${event}:${JSON.stringify(args)}`)
+    );
+    client.connect();
+    await handshake();
+    latest().receive('42["convo_ready",{"user":{"uid":1}}]');
+    client.disconnect();
+
+    expect(order).toEqual([
+      "any:connect:[]",
+      "handler",
+      'any:convo_ready:[{"user":{"uid":1}}]',
+      'any:disconnect:["io client disconnect"]',
+    ]);
+  });
+
   it("sends binary data as a binary event followed by the buffer", async () => {
     client.connect();
     await handshake();

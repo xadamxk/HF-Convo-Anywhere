@@ -22,6 +22,7 @@ describe("settings", () => {
       convoLinks: true,
       sound: false,
       groupSound: "mentions",
+      sharedConnection: true,
     });
   });
 
@@ -42,6 +43,7 @@ describe("settings", () => {
       convoLinks: false,
       sound: true,
       groupSound: "all",
+      sharedConnection: false,
     } as const;
     // Every setting differs from its default
     for (const setting of SETTINGS) {

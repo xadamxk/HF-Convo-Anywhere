@@ -1,5 +1,5 @@
 import { ConvoClient, parseMessage, partyUids, presence } from "./ConvoClient";
-import type { SocketIOClient } from "./SocketIOClient";
+import type { ConvoSocket } from "./SocketIOClient";
 
 const ME = {
   uid: 10,
@@ -168,7 +168,7 @@ describe("ConvoClient", () => {
       randomUUID: () => `req-${++uuid}`,
       createSocket: (a) => {
         auth = a;
-        return socket as unknown as SocketIOClient;
+        return socket as unknown as ConvoSocket;
       },
     });
     (client as any).testAuth = () => auth();

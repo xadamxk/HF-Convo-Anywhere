@@ -84,6 +84,78 @@ describe("MessageSound", () => {
     expect(played).toHaveLength(1);
   });
 
+  describe("in a Firefox content script", () => {
+    const scope = globalThis as any;
+    class PagePromise<T> extends Promise<T> {}
+    const exported = new WeakSet<object>();
+    beforeEach(() => {
+      (window as any).wrappedJSObject = { Promise: PagePromise };
+      scope.exportFunction = (fn: (...args: any[]) => any) => {
+        const wrapper = (...args: any[]) => fn(...args);
+        exported.add(wrapper);
+        return wrapper;
+      };
+    });
+    afterEach(() => {
+      delete scope.exportFunction;
+      delete (window as any).wrappedJSObject;
+    });
+
+    /**
+     * Firefox's page LockManager: it can only use what an exported callback
+     * returns, and only a page promise keeps the lock; anything else and
+     * the lock goes at once.
+     */
+    class FirefoxLocks {
+      held = new Set<string>();
+      async request(
+        name: string,
+        _options: { ifAvailable: boolean },
+        callback: (lock: unknown) => unknown
+      ) {
+        if (this.held.has(name)) return callback(null);
+        this.held.add(name);
+        const result = callback({ name });
+        if (exported.has(callback) && result instanceof PagePromise) {
+          try {
+            return await result;
+          } finally {
+            this.held.delete(name);
+          }
+        }
+        this.held.delete(name);
+        throw new Error('Permission denied to access property "then"');
+      }
+    }
+
+    it("still plays a message once across tabs", async () => {
+      const locks = new FirefoxLocks();
+      const tab = () =>
+        new MessageSound({
+          origin: "https://hackforums.net",
+          locks,
+          canPlay: () => true,
+          isHidden: () => false,
+          createAudio: () => ({
+            currentTime: 0,
+            play: () => void played.push("played"),
+          }),
+        });
+      tab().play("500:9");
+      await flush();
+      jest.advanceTimersByTime(10000);
+      tab().play("500:9");
+      await flush();
+      expect(played).toEqual(["played"]);
+      // The claim ends after its 30s
+      jest.advanceTimersByTime(21000);
+      await flush();
+      tab().play("500:9");
+      await flush();
+      expect(played).toEqual(["played", "played"]);
+    });
+  });
+
   it("leaves it to tabs that can play audio", async () => {
     const locks = new FakeLocks();
     tab(locks, false).play("500:9");

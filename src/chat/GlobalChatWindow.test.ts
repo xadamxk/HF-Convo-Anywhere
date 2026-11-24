@@ -2,7 +2,7 @@ import { chooseFile, transferEvent } from "../test-utils/transferEvent";
 import { FakeConvoSocket } from "../test-utils/FakeConvoSocket";
 import { GlobalChatWindow, groupTime, typingText } from "./GlobalChatWindow";
 import { GlobalRoomClient } from "./GlobalRoomClient";
-import type { SocketIOClient } from "./SocketIOClient";
+import type { ConvoSocket } from "./SocketIOClient";
 
 const ME = { uid: 10, username: "Me", avatar: "", usergroup: 2, group: 2 };
 const NOVA = {
@@ -58,7 +58,7 @@ describe("GlobalChatWindow", () => {
           postKey: "abc",
           origin: "https://hackforums.net",
           randomUUID: () => "req-1",
-          createSocket: () => socket as unknown as SocketIOClient,
+          createSocket: () => socket as unknown as ConvoSocket,
         }),
     });
     document.body.appendChild(win.root);
